@@ -21,15 +21,39 @@ export type BuildStatus = {
   }[];
 };
 
-const BUILD_PHASES = [
-  { phase: "analyzing", label: "Verzoek begrijpen", detail: "Ik lees je opdracht en haal precies uit wat je wilt aanpassen.", progress: 12 },
-  { phase: "planning", label: "Wijzigingen plannen", detail: "Ik vergelijk je verzoek met de huidige app en bepaal wat moet veranderen.", progress: 26 },
-  { phase: "generating", label: "Code herschrijven", detail: "Ik werk de HTML-structuur en inhoud bij op basis van je laatste bericht.", progress: 44 },
-  { phase: "components", label: "Onderdelen bouwen", detail: "Ik pas secties, knoppen, formulieren en navigatie gericht aan.", progress: 62 },
-  { phase: "styling", label: "Design afwerken", detail: "Ik werk spacing, kleuren en responsive gedrag bij waar nodig.", progress: 78 },
-  { phase: "interactivity", label: "Functionaliteit testen", detail: "Ik zorg dat knoppen, formulieren en interacties logisch blijven werken.", progress: 90 },
-  { phase: "finalizing", label: "Preview verversen", detail: "Ik rond alles af en zet de bijgewerkte versie klaar in de live preview.", progress: 96 },
+const BUILD_PHASE_VARIANTS = [
+  [
+    { phase: "analyzing", label: "Verzoek begrijpen", detail: "Even kijken wat je precies wilt…", progress: 12 },
+    { phase: "planning", label: "Wijzigingen plannen", detail: "Ik vergelijk je verzoek met de huidige versie.", progress: 26 },
+    { phase: "generating", label: "Code aanpassen", detail: "Bezig met het herschrijven van de structuur.", progress: 44 },
+    { phase: "components", label: "Onderdelen bijwerken", detail: "Secties, knoppen en formulieren worden aangepast.", progress: 62 },
+    { phase: "styling", label: "Styling verfijnen", detail: "Kleuren, spacing en responsive layout bijwerken.", progress: 78 },
+    { phase: "interactivity", label: "Interactie checken", detail: "Controleren of alles klikt, scrollt en werkt.", progress: 90 },
+    { phase: "finalizing", label: "Preview laden", detail: "Laatste check — bijna klaar!", progress: 96 },
+  ],
+  [
+    { phase: "analyzing", label: "Opdracht lezen", detail: "Ik snap wat je bedoelt, momentje…", progress: 12 },
+    { phase: "planning", label: "Strategie bepalen", detail: "Ik bepaal de slimste manier om dit aan te pakken.", progress: 26 },
+    { phase: "generating", label: "HTML genereren", detail: "De code wordt nu opgebouwd.", progress: 44 },
+    { phase: "components", label: "Componenten plaatsen", detail: "Formulieren, navigatie en content komen op hun plek.", progress: 62 },
+    { phase: "styling", label: "Design polijsten", detail: "Het visuele ontwerp wordt afgewerkt.", progress: 78 },
+    { phase: "interactivity", label: "Functionaliteit testen", detail: "Ik test of alles goed samenwerkt.", progress: 90 },
+    { phase: "finalizing", label: "Afronden", detail: "De preview wordt vernieuwd met je wijzigingen.", progress: 96 },
+  ],
+  [
+    { phase: "analyzing", label: "Input verwerken", detail: "Ik lees je bericht en pak de kern eruit.", progress: 12 },
+    { phase: "planning", label: "Aanpak kiezen", detail: "Even uitzoeken wat de beste route is.", progress: 26 },
+    { phase: "generating", label: "Code schrijven", detail: "De nieuwe versie wordt nu geschreven.", progress: 44 },
+    { phase: "components", label: "Elementen bouwen", detail: "Alle onderdelen worden ingepast.", progress: 62 },
+    { phase: "styling", label: "Look & feel", detail: "Kleuren en typografie worden afgesteld.", progress: 78 },
+    { phase: "interactivity", label: "Werking valideren", detail: "Knoppen, links en formulieren worden gecheckt.", progress: 90 },
+    { phase: "finalizing", label: "Klaar maken", detail: "Nog even de puntjes op de i…", progress: 96 },
+  ],
 ];
+
+const pickBuildPhases = () => BUILD_PHASE_VARIANTS[Math.floor(Math.random() * BUILD_PHASE_VARIANTS.length)];
+
+let BUILD_PHASES = pickBuildPhases();
 
 const createBuildStatus = (
   activeIndex: number,
