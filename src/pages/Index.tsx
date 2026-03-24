@@ -5,7 +5,7 @@ import ChatInput from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
 import LivePreview from "@/components/LivePreview";
 import WelcomeScreen from "@/components/WelcomeScreen";
-import ProjectsDashboard from "@/components/ProjectsDashboard";
+import ProjectsSidebar from "@/components/ProjectsSidebar";
 import PublishPanel from "@/components/PublishPanel";
 import { streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
@@ -29,7 +29,6 @@ const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 function generateContextualPhases(prompt: string, mode: "create" | "update") {
   const p = prompt.toLowerCase();
-
   const hasForm = /formulier|form|contact|mail|bericht/i.test(p);
   const hasBooking = /boek|reserv|afspraak|agenda|planning/i.test(p);
   const hasColor = /kleur|color|blauw|rood|groen|geel|paars|donker|licht|wit|zwart|theme/i.test(p);
@@ -79,8 +78,7 @@ function generateContextualPhases(prompt: string, mode: "create" | "update") {
         { label: "Wijzigingen schrijven", detail: "De aanpassingen worden nu in de code verwerkt." },
       ]);
 
-  let compLabel = "Onderdelen plaatsen";
-  let compDetail = "Alle elementen worden ingepast.";
+  let compLabel = "Onderdelen plaatsen"; let compDetail = "Alle elementen worden ingepast.";
   if (hasForm) { compLabel = "Formulier bouwen"; compDetail = "Invoervelden, validatie en verzendknop worden toegevoegd."; }
   else if (hasBooking) { compLabel = "Boekingssysteem maken"; compDetail = "Datumkeuze, tijdslots en bevestiging worden ingebouwd."; }
   else if (hasNav) { compLabel = "Navigatie opzetten"; compDetail = "Menu-items en scroll-links worden gemaakt."; }
@@ -88,12 +86,10 @@ function generateContextualPhases(prompt: string, mode: "create" | "update") {
   else if (hasSection) { compLabel = "Secties toevoegen"; compDetail = "Nieuwe contentblokken worden toegevoegd."; }
   else if (hasHero) { compLabel = "Hero-sectie maken"; compDetail = "De grote kopsectie met titel en CTA wordt opgezet."; }
 
-  let styleLabel = "Styling toepassen";
-  let styleDetail = "Layout, kleuren en responsive design worden afgewerkt.";
+  let styleLabel = "Styling toepassen"; let styleDetail = "Layout, kleuren en responsive design worden afgewerkt.";
   if (hasColor) { styleLabel = "Kleuren doorvoeren"; styleDetail = "Het nieuwe kleurenschema wordt overal toegepast."; }
 
-  let interLabel = "Werking controleren";
-  let interDetail = "Ik check of alle knoppen en links goed functioneren.";
+  let interLabel = "Werking controleren"; let interDetail = "Ik check of alle knoppen en links goed functioneren.";
   if (hasForm) { interLabel = "Formulier testen"; interDetail = "Validatie en verzendlogica worden gecontroleerd."; }
   else if (hasBooking) { interLabel = "Boekingsflow testen"; interDetail = "Het hele reserveringsproces wordt doorgelopen."; }
   else if (hasDownload) { interLabel = "Download testen"; interDetail = "De downloadfunctie wordt gevalideerd."; }
@@ -118,10 +114,7 @@ function generateContextualPhases(prompt: string, mode: "create" | "update") {
 let BUILD_PHASES = generateContextualPhases("", "create");
 
 const createBuildStatus = (
-  activeIndex: number,
-  latestPrompt: string,
-  mode: "create" | "update",
-  done = false,
+  activeIndex: number, latestPrompt: string, mode: "create" | "update", done = false,
 ): BuildStatus => ({
   phase: done ? "done" : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].phase,
   detail: done
@@ -130,20 +123,16 @@ const createBuildStatus = (
         : ["Je app staat klaar in de preview!", "Eerste versie is live — check het rechts.", "Gebouwd en geladen. Laat maar weten wat je wilt aanpassen."])
     : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].detail,
   progress: done ? 100 : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].progress,
-  mode,
-  latestPrompt,
+  mode, latestPrompt,
   steps: BUILD_PHASES.map((step, index) => ({
-    phase: step.phase,
-    label: step.label,
-    detail: step.detail,
+    phase: step.phase, label: step.label, detail: step.detail,
     status: done || index < activeIndex ? "done" : index === activeIndex ? "active" : "pending",
   })),
 });
 
-type View = "dashboard" | "welcome" | "builder";
-
 const Index = () => {
-  const [view, setView] = useState<View>("dashboard");
+  const [hasStarted, setHasStarted] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
@@ -154,13 +143,8 @@ const Index = () => {
   const phaseIndexRef = useRef(0);
   const phaseTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    return () => { if (phaseTimerRef.current) clearInterval(phaseTimerRef.current); };
-  }, []);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => { return () => { if (phaseTimerRef.current) clearInterval(phaseTimerRef.current); }; }, []);
 
   const startBuildProgress = (latestPrompt: string, mode: "create" | "update") => {
     if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
@@ -171,9 +155,7 @@ const Index = () => {
       phaseIndexRef.current += 1;
       if (phaseIndexRef.current < BUILD_PHASES.length) {
         setBuildStatus(createBuildStatus(phaseIndexRef.current, latestPrompt, mode));
-      } else {
-        if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
-      }
+      } else { if (phaseTimerRef.current) clearInterval(phaseTimerRef.current); }
     }, 2500);
   };
 
@@ -184,7 +166,6 @@ const Index = () => {
     setTimeout(() => setBuildStatus(null), 2000);
   };
 
-  // Save HTML to project whenever it changes
   const saveHtmlToProject = (html: string) => {
     if (currentProject) {
       const updated = updateProject(currentProject.id, { html });
@@ -196,6 +177,7 @@ const Index = () => {
   };
 
   const handleSend = async (input: string) => {
+    if (!hasStarted) setHasStarted(true);
     const mode = generatedHtml ? "update" : "create";
     const userMsg: ChatMessage = { role: "user", content: input };
     const updatedMessages = [...messages, userMsg];
@@ -206,13 +188,11 @@ const Index = () => {
     setMessages(updatedMessages);
     setIsLoading(true);
     startBuildProgress(input, mode);
-
     let fullResponse = "";
 
     try {
       await streamGenerateApp({
-        messages: conversationForAi,
-        currentHtml: generatedHtml,
+        messages: conversationForAi, currentHtml: generatedHtml,
         onDelta: (chunk) => { fullResponse += chunk; },
         onDone: () => {
           let html = fullResponse;
@@ -225,43 +205,31 @@ const Index = () => {
             saveHtmlToProject(html);
 
             const sameResponses = [
-              `Hmm, ik heb je verzoek verwerkt maar de app ziet er hetzelfde uit.\n\nProbeer het specifieker, bijv. "maak de achtergrond donkerblauw" of "voeg een FAQ-sectie toe".`,
-              `Ik heb ernaar gekeken, maar er veranderde niks merkbaar.\n\nTip: wees wat concreter — bijv. "verander de titel naar X" of "voeg een prijstabel toe".`,
+              `Hmm, de app ziet er hetzelfde uit.\n\nProbeer specifieker, bijv. "maak de achtergrond donkerblauw" of "voeg een FAQ-sectie toe".`,
+              `Er veranderde niks merkbaar.\n\nTip: wees concreter — bijv. "verander de titel naar X" of "voeg een prijstabel toe".`,
             ];
-
             const updateResponses = [
-              `Top, dat is gefixt! 🛠️\n\n✓ "${input}" doorgevoerd\n✓ Preview is bijgewerkt\n\nWat wil je hierna aanpassen?`,
-              `Geregeld! ✅\n\n✓ Je verzoek verwerkt\n✓ De rest onaangetast gelaten\n\nKijk even of het klopt.`,
-              `Klaar, de update staat live. 🚀\n\n✓ "${input}" is verwerkt\n✓ Bestaande functionaliteit behouden\n\nWat nu?`,
+              `Top, gefixt! 🛠️\n\n✓ "${input}" doorgevoerd\n✓ Preview bijgewerkt\n\nWat wil je hierna aanpassen?`,
+              `Geregeld! ✅\n\n✓ Verzoek verwerkt\n✓ Rest onaangetast\n\nKijk even of het klopt.`,
+              `Update staat live 🚀\n\n✓ "${input}" verwerkt\n✓ Functionaliteit behouden\n\nWat nu?`,
             ];
-
             const createResponses = [
-              `Je app staat klaar! 🎉\n\n✓ Werkende pagina gebouwd\n✓ Preview direct beschikbaar\n\nJe kunt nu verfijnen — vertel me wat je wilt veranderen.`,
-              `Eerste versie is live! ✨\n\n✓ Complete HTML-pagina gebouwd\n✓ Klaar om te itereren\n\nWat wil je als eerste aanpassen?`,
-              `Nice, hier is je app! 💪\n\n✓ Responsive design en interactieve elementen inbegrepen\n\nDe preview staat rechts — schiet maar met je eerste feedback.`,
+              `Je app staat klaar! 🎉\n\n✓ Werkende pagina gebouwd\n✓ Preview beschikbaar\n\nVertel me wat je wilt veranderen.`,
+              `Eerste versie live! ✨\n\n✓ Complete pagina gebouwd\n✓ Klaar om te itereren\n\nWat wil je aanpassen?`,
+              `Nice, hier is je app! 💪\n\n✓ Responsive design inbegrepen\n\nSchiet maar met je feedback.`,
             ];
 
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content: isSameHtml ? pick(sameResponses) : mode === "update" ? pick(updateResponses) : pick(createResponses),
-              },
-            ]);
+            setMessages((prev) => [...prev, {
+              role: "assistant",
+              content: isSameHtml ? pick(sameResponses) : mode === "update" ? pick(updateResponses) : pick(createResponses),
+            }]);
           } else {
-            setMessages((prev) => [
-              ...prev,
-              { role: "assistant", content: `Ik kreeg geen geldige app terug.\n\nOntvangen:\n${fullResponse}` },
-            ]);
+            setMessages((prev) => [...prev, { role: "assistant", content: `Geen geldige app ontvangen.\n\n${fullResponse}` }]);
           }
           setIsLoading(false);
           stopBuildProgress(input, mode);
         },
-        onError: (error) => {
-          toast.error(error);
-          setIsLoading(false);
-          stopBuildProgress(input, mode);
-        },
+        onError: (error) => { toast.error(error); setIsLoading(false); stopBuildProgress(input, mode); },
       });
     } catch {
       toast.error("Generatie mislukt. Probeer het opnieuw.");
@@ -275,19 +243,14 @@ const Index = () => {
     setGeneratedHtml(null);
     setCurrentProject(null);
     setBuildStatus(null);
-    setView("welcome");
+    setHasStarted(false);
   };
 
   const handleOpenProject = (project: AppProject) => {
     setCurrentProject(project);
     setGeneratedHtml(project.html);
     setMessages([]);
-    setView("builder");
-  };
-
-  const handleWelcomeSend = (input: string) => {
-    setView("builder");
-    handleSend(input);
+    setHasStarted(true);
   };
 
   const handleProjectUpdate = (updates: Partial<AppProject>) => {
@@ -296,62 +259,78 @@ const Index = () => {
     if (updated) setCurrentProject(updated);
   };
 
-  if (view === "dashboard") {
-    return <ProjectsDashboard onNewProject={handleNewProject} onOpenProject={handleOpenProject} />;
-  }
-
-  if (view === "welcome") {
+  // Welcome screen with sidebar toggle
+  if (!hasStarted) {
     return (
-      <div className="relative">
-        <div className="absolute top-4 left-4 z-20">
-          <Button variant="ghost" size="sm" onClick={() => setView("dashboard")} className="text-muted-foreground hover:text-foreground">
-            <FolderOpen className="h-4 w-4 mr-1.5" />
-            Projecten
-          </Button>
+      <>
+        <ProjectsSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onNewProject={handleNewProject}
+          onOpenProject={handleOpenProject}
+          activeProjectId={currentProject?.id}
+        />
+        <div className="relative">
+          <div className="absolute top-4 left-4 z-20">
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="text-muted-foreground hover:text-foreground">
+              <FolderOpen className="h-4 w-4 mr-1.5" />
+              Projecten
+            </Button>
+          </div>
+          <WelcomeScreen onSend={handleSend} />
         </div>
-        <WelcomeScreen onSend={handleWelcomeSend} />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setView("dashboard")} className="h-8 px-2">
-            <FolderOpen className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-              <Wand2 className="h-4 w-4 text-primary-foreground" />
+    <>
+      <ProjectsSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onNewProject={handleNewProject}
+        onOpenProject={handleOpenProject}
+        activeProjectId={currentProject?.id}
+      />
+
+      <div className="flex flex-col h-screen bg-background">
+        <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="h-8 px-2">
+              <FolderOpen className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
+                <Wand2 className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <h1 className="text-sm font-bold">{currentProject?.name || "AppForge"}</h1>
             </div>
-            <h1 className="text-sm font-bold">{currentProject?.name || "AppForge"}</h1>
           </div>
-        </div>
-        <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
-          <Globe className="h-4 w-4 mr-1.5" />
-          Publiceer
-        </Button>
-      </header>
+          <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
+            <Globe className="h-4 w-4 mr-1.5" />
+            Publiceer
+          </Button>
+        </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-[380px] flex flex-col border-r border-border shrink-0">
-          <ChatMessages messages={messages} isLoading={isLoading} buildStatus={buildStatus} />
-          <div ref={messagesEndRef} />
-          <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+        <div className="flex flex-1 overflow-hidden">
+          <div className="w-[380px] flex flex-col border-r border-border shrink-0">
+            <ChatMessages messages={messages} isLoading={isLoading} buildStatus={buildStatus} />
+            <div ref={messagesEndRef} />
+            <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+          </div>
+          <LivePreview html={generatedHtml} />
         </div>
-        <LivePreview html={generatedHtml} />
+
+        {showPublish && currentProject && (
+          <PublishPanel
+            project={currentProject}
+            html={generatedHtml || ""}
+            onUpdate={handleProjectUpdate}
+            onClose={() => setShowPublish(false)}
+          />
+        )}
       </div>
-
-      {showPublish && currentProject && (
-        <PublishPanel
-          project={currentProject}
-          html={generatedHtml || ""}
-          onUpdate={handleProjectUpdate}
-          onClose={() => setShowPublish(false)}
-        />
-      )}
-    </div>
+    </>
   );
 };
 
