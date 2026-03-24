@@ -42,8 +42,8 @@ const AppPreview = ({ html, businessName }: Props) => {
         <div className="bg-muted px-4 py-2 flex items-center gap-2 border-b border-border">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 rounded-full bg-destructive/60" />
-            <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
-            <div className="w-3 h-3 rounded-full bg-green-400/60" />
+            <div className="w-3 h-3 rounded-full bg-accent-foreground/30" />
+            <div className="w-3 h-3 rounded-full bg-accent-foreground/20" />
           </div>
           <span className="text-xs text-muted-foreground ml-2">{businessName.toLowerCase().replace(/\s+/g, "")}.com</span>
         </div>
