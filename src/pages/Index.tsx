@@ -14,13 +14,13 @@ export type BuildStatus = {
 };
 
 const BUILD_PHASES: BuildStatus[] = [
-  { phase: "analyzing", detail: "Analyseer je beschrijving...", progress: 10 },
-  { phase: "planning", detail: "Layout en structuur plannen...", progress: 25 },
-  { phase: "generating", detail: "HTML & CSS genereren...", progress: 40 },
-  { phase: "components", detail: "Componenten bouwen...", progress: 60 },
-  { phase: "styling", detail: "Styling toepassen...", progress: 75 },
-  { phase: "interactivity", detail: "Interactiviteit toevoegen...", progress: 85 },
-  { phase: "finalizing", detail: "App afronden...", progress: 95 },
+  { phase: "analyzing", detail: "Ik lees je prompt en bepaal welke onderdelen nodig zijn...", progress: 10 },
+  { phase: "planning", detail: "Ik vergelijk dit met de huidige app en plan de wijzigingen...", progress: 25 },
+  { phase: "generating", detail: "Ik schrijf de nieuwe HTML-structuur en inhoud...", progress: 40 },
+  { phase: "components", detail: "Ik bouw secties, knoppen, formulieren en navigatie...", progress: 60 },
+  { phase: "styling", detail: "Ik werk styling, spacing en responsive gedrag bij...", progress: 75 },
+  { phase: "interactivity", detail: "Ik voeg logica toe voor interacties en gebruiksflow...", progress: 85 },
+  { phase: "finalizing", detail: "Ik controleer de output en maak de preview klaar...", progress: 95 },
 ];
 
 const Index = () => {
@@ -45,6 +45,11 @@ const Index = () => {
   }, []);
 
   const startBuildProgress = () => {
+    if (phaseTimerRef.current) {
+      clearInterval(phaseTimerRef.current);
+      phaseTimerRef.current = null;
+    }
+
     phaseIndexRef.current = 0;
     setBuildStatus(BUILD_PHASES[0]);
 
@@ -72,6 +77,7 @@ const Index = () => {
 
     const userMsg: ChatMessage = { role: "user", content: input };
     const updatedMessages = [...messages, userMsg];
+    const conversationForAi = updatedMessages.filter((message) => message.role === "user");
     setMessages(updatedMessages);
     setIsLoading(true);
     startBuildProgress();
@@ -80,7 +86,7 @@ const Index = () => {
 
     try {
       await streamGenerateApp({
-        messages: updatedMessages,
+        messages: conversationForAi,
         currentHtml: generatedHtml,
         onDelta: (chunk) => {
           fullResponse += chunk;
@@ -93,10 +99,18 @@ const Index = () => {
           html = html.trim();
 
           if (html.includes("<!DOCTYPE") || html.includes("<html")) {
+            const isSameHtml = generatedHtml?.trim() === html;
             setGeneratedHtml(html);
             setMessages((prev) => [
               ...prev,
-              { role: "assistant", content: html },
+              {
+                role: "assistant",
+                content: isSameHtml
+                  ? `Ik heb je verzoek verwerkt, maar de output bleef vrijwel gelijk. Geef iets specifieker aan wat anders moet.`
+                  : generatedHtml
+                    ? `Klaar — ik heb de app bijgewerkt op basis van je laatste verzoek: "${input}".`
+                    : `Klaar — ik heb een eerste werkende versie gemaakt op basis van: "${input}".`,
+              },
             ]);
           } else {
             setMessages((prev) => [
