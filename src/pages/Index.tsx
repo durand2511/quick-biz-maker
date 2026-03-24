@@ -7,16 +7,65 @@ import WelcomeScreen from "@/components/WelcomeScreen";
 import { streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { toast } from "sonner";
 
+export type BuildStatus = {
+  phase: string;
+  detail: string;
+  progress: number;
+};
+
+const BUILD_PHASES: BuildStatus[] = [
+  { phase: "analyzing", detail: "Analyseer je beschrijving...", progress: 10 },
+  { phase: "planning", detail: "Layout en structuur plannen...", progress: 25 },
+  { phase: "generating", detail: "HTML & CSS genereren...", progress: 40 },
+  { phase: "components", detail: "Componenten bouwen...", progress: 60 },
+  { phase: "styling", detail: "Styling toepassen...", progress: 75 },
+  { phase: "interactivity", detail: "Interactiviteit toevoegen...", progress: 85 },
+  { phase: "finalizing", detail: "App afronden...", progress: 95 },
+];
+
 const Index = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [buildStatus, setBuildStatus] = useState<BuildStatus | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const phaseIndexRef = useRef(0);
+  const phaseTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
+    };
+  }, []);
+
+  const startBuildProgress = () => {
+    phaseIndexRef.current = 0;
+    setBuildStatus(BUILD_PHASES[0]);
+
+    phaseTimerRef.current = setInterval(() => {
+      phaseIndexRef.current += 1;
+      if (phaseIndexRef.current < BUILD_PHASES.length) {
+        setBuildStatus(BUILD_PHASES[phaseIndexRef.current]);
+      } else {
+        if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
+      }
+    }, 2500);
+  };
+
+  const stopBuildProgress = () => {
+    if (phaseTimerRef.current) {
+      clearInterval(phaseTimerRef.current);
+      phaseTimerRef.current = null;
+    }
+    setBuildStatus({ phase: "done", detail: "Klaar! ✅", progress: 100 });
+    setTimeout(() => setBuildStatus(null), 2000);
+  };
 
   const handleSend = async (input: string) => {
     if (!hasStarted) setHasStarted(true);
@@ -25,6 +74,7 @@ const Index = () => {
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setIsLoading(true);
+    startBuildProgress();
 
     let fullResponse = "";
 
@@ -55,27 +105,27 @@ const Index = () => {
             ]);
           }
           setIsLoading(false);
+          stopBuildProgress();
         },
         onError: (error) => {
           toast.error(error);
           setIsLoading(false);
+          stopBuildProgress();
         },
       });
     } catch {
-      toast.error("Failed to generate app. Please try again.");
+      toast.error("Generatie mislukt. Probeer het opnieuw.");
       setIsLoading(false);
+      stopBuildProgress();
     }
   };
 
-  // Welcome screen (before first prompt)
   if (!hasStarted) {
     return <WelcomeScreen onSend={handleSend} />;
   }
 
-  // Builder view (after first prompt)
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
       <header className="flex items-center gap-3 border-b border-border bg-card px-5 py-3 shrink-0">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
           <Wand2 className="h-4 w-4 text-primary-foreground" />
@@ -84,18 +134,16 @@ const Index = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Chat panel */}
         <div className="w-[380px] flex flex-col border-r border-border shrink-0">
-          <ChatMessages messages={messages} isLoading={isLoading} />
+          <ChatMessages messages={messages} isLoading={isLoading} buildStatus={buildStatus} />
           <div ref={messagesEndRef} />
           <ChatInput
             onSend={handleSend}
             isLoading={isLoading}
-            placeholder="Describe changes..."
+            placeholder="Beschrijf wijzigingen..."
           />
         </div>
 
-        {/* Preview */}
         <LivePreview html={generatedHtml} />
       </div>
     </div>

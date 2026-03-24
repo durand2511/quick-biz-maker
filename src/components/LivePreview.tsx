@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, Smartphone, Monitor } from "lucide-react";
+import { Download, ExternalLink, Smartphone, Monitor, Globe, FileDown } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface Props {
   html: string | null;
@@ -8,16 +9,20 @@ interface Props {
 
 const LivePreview = ({ html }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
-  const handleDownload = () => {
+  const handleDownloadHtml = () => {
     if (!html) return;
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "my-app.html";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    toast.success("HTML bestand gedownload!");
   };
 
   const handleOpen = () => {
@@ -27,13 +32,44 @@ const LivePreview = ({ html }: Props) => {
     window.open(url, "_blank");
   };
 
+  const handlePublish = async () => {
+    if (!html) return;
+    setIsPublishing(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-app`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ html }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Publiceren mislukt");
+
+      const publicUrl = data.url;
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success("App gepubliceerd! URL gekopieerd naar klembord.", {
+        description: publicUrl,
+        duration: 8000,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Publiceren mislukt");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   if (!html) {
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/30">
         <div className="text-center text-muted-foreground space-y-2">
           <Monitor className="h-12 w-12 mx-auto opacity-30" />
           <p className="text-sm font-medium">Live Preview</p>
-          <p className="text-xs">Your generated app will appear here</p>
+          <p className="text-xs">Je gegenereerde app verschijnt hier</p>
         </div>
       </div>
     );
@@ -71,9 +107,20 @@ const LivePreview = ({ html }: Props) => {
             <ExternalLink className="h-3 w-3 mr-1" />
             Open
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleDownload}>
-            <Download className="h-3 w-3 mr-1" />
-            Download
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleDownloadHtml}>
+            <FileDown className="h-3 w-3 mr-1" />
+            HTML
+          </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button
+            variant="default"
+            size="sm"
+            className="h-7 px-3 text-xs"
+            onClick={handlePublish}
+            disabled={isPublishing}
+          >
+            <Globe className="h-3 w-3 mr-1" />
+            {isPublishing ? "Publiceren..." : "Publiceer"}
           </Button>
         </div>
       </div>
