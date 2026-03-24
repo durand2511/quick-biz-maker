@@ -105,6 +105,7 @@ const Index = () => {
       phaseTimerRef.current = null;
     }
 
+    BUILD_PHASES = pickBuildPhases();
     phaseIndexRef.current = 0;
     setBuildStatus(createBuildStatus(0, latestPrompt, mode));
 
