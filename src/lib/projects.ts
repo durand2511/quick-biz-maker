@@ -1,9 +1,12 @@
+export type DomainStatus = "none" | "pending" | "connected";
+
 export interface AppProject {
   id: string;
   name: string;
   description: string;
   html: string;
   domain: string;
+  domainStatus: DomainStatus;
   publishedUrl: string | null;
   visibility: "public" | "private";
   createdAt: string;
