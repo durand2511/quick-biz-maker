@@ -8,24 +8,38 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `You are an expert web app generator. Given a user's description, you generate a complete, self-contained HTML page with inline CSS and JavaScript.
 
 RULES:
-- Output ONLY valid HTML. No markdown, no code fences, no explanations.
+- Output ONLY valid HTML. No markdown, no code fences, no explanations, no comments before <!DOCTYPE html>.
 - The HTML must be a complete document with <!DOCTYPE html>, <html>, <head>, <body>.
 - Use modern, clean design with a sans-serif font (Inter from Google Fonts).
-- Use Tailwind CSS via CDN for styling.
-- Make the app mobile-responsive.
-- Include realistic placeholder content relevant to the business.
-- For forms, use onsubmit="event.preventDefault(); alert('Submitted!')" for demo purposes.
-- Use a professional color scheme (sky blue primary #0ea5e9, slate grays).
-- Include smooth transitions and hover effects.
-- Add a sticky navigation bar, hero section, and footer.
-- Generate complete, working interactive elements (tabs, modals, forms).
+- Use Tailwind CSS via CDN (<script src="https://cdn.tailwindcss.com"></script>) for styling.
+- Make the app fully mobile-responsive.
+- Include realistic, professional placeholder content relevant to the business.
+- For forms, use proper form validation and onsubmit="event.preventDefault(); alert('Formulier verstuurd!')" for demo purposes.
+- Use a professional color scheme appropriate to the business type.
+- Include smooth CSS transitions and hover effects.
+- Generate complete, working interactive elements (tabs, modals, forms, navigation).
+- Add a sticky navigation bar with working mobile hamburger menu.
+- Include hero section, about section, services/features, contact form, and footer.
+- Use Font Awesome icons via CDN for visual appeal.
+- All text content should be in Dutch (Netherlands).
+- Make sure ALL links and buttons work (smooth scroll to sections, toggle menus, etc.).
+- Include proper meta tags for SEO.
+- The page should look like a real, professional website — not a template.
+
+FOR BOOKING/RESERVATION APPS:
+- Include a date picker, time slots, and a form with name/email/phone fields.
+- Show a confirmation modal after booking.
+
+FOR CONTACT FORMS:
+- Include name, email, phone, subject, and message fields.
+- Show validation errors and success feedback.
 
 WHEN THE USER ASKS TO MODIFY AN EXISTING APP:
 - You will receive the current HTML as context.
 - Apply ONLY the requested changes while keeping everything else intact.
 - Return the FULL updated HTML document.
 
-IMPORTANT: Your entire response must be valid HTML. Nothing else.`;
+IMPORTANT: Your entire response must be ONLY valid HTML starting with <!DOCTYPE html>. Nothing else.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -37,12 +51,10 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build the messages array for the AI
     const aiMessages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
     ];
 
-    // If there's existing HTML, include it as context
     if (currentHtml) {
       aiMessages.push({
         role: "system",
@@ -50,7 +62,6 @@ serve(async (req) => {
       });
     }
 
-    // Add conversation messages
     for (const msg of messages) {
       aiMessages.push({ role: msg.role, content: msg.content });
     }
@@ -70,20 +81,20 @@ serve(async (req) => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+        return new Response(JSON.stringify({ error: "Te veel verzoeken. Probeer het over een moment opnieuw." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings > Workspace > Usage." }), {
+        return new Response(JSON.stringify({ error: "AI-tegoed op. Voeg tegoed toe in Instellingen." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI generation failed" }), {
+      return new Response(JSON.stringify({ error: "AI-generatie mislukt" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -94,7 +105,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("generate-app error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Onbekende fout" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
