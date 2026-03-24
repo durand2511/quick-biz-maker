@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, Smartphone, Monitor, Globe, FileDown } from "lucide-react";
+import { ExternalLink, Smartphone, Monitor, Globe, FileDown, Copy, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,6 +10,26 @@ interface Props {
 const LivePreview = ({ html }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+
+  const copyToClipboard = async (value: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "true");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return copied;
+  };
 
   const handleDownloadHtml = () => {
     if (!html) return;
@@ -51,11 +71,25 @@ const LivePreview = ({ html }: Props) => {
       if (!response.ok) throw new Error(data.error || "Publiceren mislukt");
 
       const publicUrl = data.url;
-      await navigator.clipboard.writeText(publicUrl);
-      toast.success("App gepubliceerd! URL gekopieerd naar klembord.", {
-        description: publicUrl,
-        duration: 8000,
-      });
+      setPublishedUrl(publicUrl);
+
+      try {
+        const copied = await copyToClipboard(publicUrl);
+        toast.success(
+          copied
+            ? "App gepubliceerd! Link is gekopieerd."
+            : "App gepubliceerd! Open of kopieer de link hieronder.",
+          {
+            description: publicUrl,
+            duration: 8000,
+          }
+        );
+      } catch {
+        toast.success("App gepubliceerd! Open of kopieer de link hieronder.", {
+          description: publicUrl,
+          duration: 8000,
+        });
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Publiceren mislukt");
     } finally {
@@ -124,6 +158,51 @@ const LivePreview = ({ html }: Props) => {
           </Button>
         </div>
       </div>
+
+      {publishedUrl && (
+        <div className="border-b border-border bg-secondary/40 px-4 py-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-foreground">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                Gepubliceerd op het web
+              </div>
+              <p className="truncate text-xs text-muted-foreground">{publishedUrl}</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs"
+                onClick={async () => {
+                  try {
+                    await copyToClipboard(publishedUrl);
+                    toast.success("Link gekopieerd");
+                  } catch {
+                    toast.error("Kopiëren is geblokkeerd, kopieer de link handmatig");
+                  }
+                }}
+              >
+                <Copy className="mr-1 h-3 w-3" />
+                Kopieer link
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 px-3 text-xs"
+                onClick={() => window.open(publishedUrl, "_blank", "noopener,noreferrer")}
+              >
+                <ExternalLink className="mr-1 h-3 w-3" />
+                Open site
+              </Button>
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Voor een eigen domein: publiceer eerst je hoofdapp en koppel daarna je domein via Project Settings → Domains.
+          </p>
+        </div>
+      )}
 
       {/* iframe */}
       <div className="flex-1 flex items-start justify-center p-4 overflow-auto">
