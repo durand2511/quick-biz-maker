@@ -161,15 +161,35 @@ const Index = () => {
           if (html.includes("<!DOCTYPE") || html.includes("<html")) {
             const isSameHtml = generatedHtml?.trim() === html;
             setGeneratedHtml(html);
+
+            const sameResponses = [
+              `Hmm, ik heb je verzoek verwerkt maar de app ziet er hetzelfde uit.\n\n✓ Gecheckt\n• "${input}" vergeleken met de huidige versie\n• Geen zichtbaar verschil gevonden\n\nProbeer het specifieker, bijv. "maak de achtergrond donkerblauw" of "voeg een FAQ-sectie toe onder services".`,
+              `Ik heb ernaar gekeken, maar er veranderde niks merkbaar.\n\n✓ Wat ik deed\n• Je wijziging "${input}" geanalyseerd\n• De bestaande code doorgelopen\n\nTip: wees wat concreter — bijv. "verander de titel naar X" of "voeg een prijstabel toe".`,
+            ];
+
+            const updateResponses = [
+              `Top, dat is gefixt! 🛠️\n\n✓ Uitgevoerd\n• "${input}" doorgevoerd in de bestaande app\n• Alleen het relevante deel aangepast\n• Preview is bijgewerkt\n\nBekijk het resultaat rechts — laat me weten of je nog iets wilt tweaken.`,
+              `Geregeld! ✅\n\n✓ Wat ik heb aangepast\n• Je verzoek "${input}" verwerkt\n• De rest van de app onaangetast gelaten\n• Live preview ververst\n\nKijk even of het klopt, en geef gerust je volgende wijziging door.`,
+              `Klaar, de update staat live. 🚀\n\n✓ Gedaan\n• "${input}" is verwerkt in de code\n• Bestaande functionaliteit behouden\n• Preview direct bijgewerkt\n\nWat wil je hierna aanpassen?`,
+            ];
+
+            const createResponses = [
+              `Je app staat klaar! 🎉\n\n✓ Wat ik heb gebouwd\n• Je idee "${input}" omgezet naar een werkende pagina\n• Navigatie, secties en styling opgezet\n• Preview is direct beschikbaar\n\nJe kunt nu verfijnen — vertel me wat je wilt veranderen.`,
+              `Eerste versie is live! ✨\n\n✓ Opgeleverd\n• Complete HTML-pagina gebouwd op basis van "${input}"\n• Professionele opzet met hero, content en footer\n• Klaar om te itereren\n\nWat wil je als eerste aanpassen?`,
+              `Nice, hier is je app! 💪\n\n✓ Gebouwd\n• "${input}" vertaald naar een volledige werkende webpagina\n• Responsive design en interactieve elementen inbegrepen\n\nDe preview staat rechts — schiet maar met je eerste feedback.`,
+            ];
+
+            const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+
             setMessages((prev) => [
               ...prev,
               {
                 role: "assistant",
                 content: isSameHtml
-                  ? `Ik heb je verzoek verwerkt, maar de output bleef vrijwel gelijk.\n\n✓ Wat ik heb gecontroleerd\n• Je laatste wijziging: "${input}"\n• De huidige app als basis voor de update\n• De preview opnieuw opgebouwd\n\nGeef je wijziging iets concreter, bijvoorbeeld: "voeg onder de hero een contactformulier toe" of "maak de boekingsknop blauw en laat hem scrollen naar boeken".`
+                  ? pick(sameResponses)
                   : mode === "update"
-                    ? `Klaar — ik heb je app bijgewerkt.\n\n✓ Wat ik heb gedaan\n• Je laatste verzoek uitgevoerd: "${input}"\n• Alleen de relevante delen aangepast in plaats van alles opnieuw te maken\n• De live preview vernieuwd met de nieuwe versie\n\n✓ Hoe ik dit heb gedaan\n• Eerst de bestaande HTML als basis genomen\n• Daarna je wijziging gericht in de code verwerkt\n• Tot slot gecontroleerd of de nieuwe output geldig is voor de preview`
-                    : `Klaar — ik heb een eerste versie van je app gemaakt.\n\n✓ Wat ik heb gedaan\n• Je idee omgezet naar een werkende eerste app\n• Een volledige HTML-pagina opgebouwd met inhoud en structuur\n• De live preview direct gevuld zodat je meteen kunt itereren\n\n✓ Hoe ik dit heb gedaan\n• Je beschrijving vertaald naar secties, knoppen en flow\n• De basisfunctionaliteit in de gegenereerde app gezet\n• Alles direct klaargezet voor je volgende wijziging`,
+                    ? pick(updateResponses)
+                    : pick(createResponses),
               },
             ]);
           } else {
