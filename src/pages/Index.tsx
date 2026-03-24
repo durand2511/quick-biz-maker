@@ -171,7 +171,7 @@ const Index = () => {
       phaseTimerRef.current = null;
     }
 
-    BUILD_PHASES = pickBuildPhases();
+    BUILD_PHASES = generateContextualPhases(latestPrompt, mode);
     phaseIndexRef.current = 0;
     setBuildStatus(createBuildStatus(0, latestPrompt, mode));
 
