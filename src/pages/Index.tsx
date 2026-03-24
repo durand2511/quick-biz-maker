@@ -11,17 +11,48 @@ export type BuildStatus = {
   phase: string;
   detail: string;
   progress: number;
+  mode: "create" | "update";
+  latestPrompt: string;
+  steps: {
+    phase: string;
+    label: string;
+    detail: string;
+    status: "pending" | "active" | "done";
+  }[];
 };
 
-const BUILD_PHASES: BuildStatus[] = [
-  { phase: "analyzing", detail: "Ik lees je prompt en bepaal welke onderdelen nodig zijn...", progress: 10 },
-  { phase: "planning", detail: "Ik vergelijk dit met de huidige app en plan de wijzigingen...", progress: 25 },
-  { phase: "generating", detail: "Ik schrijf de nieuwe HTML-structuur en inhoud...", progress: 40 },
-  { phase: "components", detail: "Ik bouw secties, knoppen, formulieren en navigatie...", progress: 60 },
-  { phase: "styling", detail: "Ik werk styling, spacing en responsive gedrag bij...", progress: 75 },
-  { phase: "interactivity", detail: "Ik voeg logica toe voor interacties en gebruiksflow...", progress: 85 },
-  { phase: "finalizing", detail: "Ik controleer de output en maak de preview klaar...", progress: 95 },
+const BUILD_PHASES = [
+  { phase: "analyzing", label: "Verzoek begrijpen", detail: "Ik lees je opdracht en haal precies uit wat je wilt aanpassen.", progress: 12 },
+  { phase: "planning", label: "Wijzigingen plannen", detail: "Ik vergelijk je verzoek met de huidige app en bepaal wat moet veranderen.", progress: 26 },
+  { phase: "generating", label: "Code herschrijven", detail: "Ik werk de HTML-structuur en inhoud bij op basis van je laatste bericht.", progress: 44 },
+  { phase: "components", label: "Onderdelen bouwen", detail: "Ik pas secties, knoppen, formulieren en navigatie gericht aan.", progress: 62 },
+  { phase: "styling", label: "Design afwerken", detail: "Ik werk spacing, kleuren en responsive gedrag bij waar nodig.", progress: 78 },
+  { phase: "interactivity", label: "Functionaliteit testen", detail: "Ik zorg dat knoppen, formulieren en interacties logisch blijven werken.", progress: 90 },
+  { phase: "finalizing", label: "Preview verversen", detail: "Ik rond alles af en zet de bijgewerkte versie klaar in de live preview.", progress: 96 },
 ];
+
+const createBuildStatus = (
+  activeIndex: number,
+  latestPrompt: string,
+  mode: "create" | "update",
+  done = false,
+): BuildStatus => ({
+  phase: done ? "done" : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].phase,
+  detail: done
+    ? mode === "update"
+      ? "Klaar — je app is bijgewerkt en de preview is vernieuwd."
+      : "Klaar — je eerste versie staat live in de preview."
+    : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].detail,
+  progress: done ? 100 : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].progress,
+  mode,
+  latestPrompt,
+  steps: BUILD_PHASES.map((step, index) => ({
+    phase: step.phase,
+    label: step.label,
+    detail: step.detail,
+    status: done || index < activeIndex ? "done" : index === activeIndex ? "active" : "pending",
+  })),
+});
 
 const Index = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -44,43 +75,48 @@ const Index = () => {
     };
   }, []);
 
-  const startBuildProgress = () => {
+  const startBuildProgress = (latestPrompt: string, mode: "create" | "update") => {
     if (phaseTimerRef.current) {
       clearInterval(phaseTimerRef.current);
       phaseTimerRef.current = null;
     }
 
     phaseIndexRef.current = 0;
-    setBuildStatus(BUILD_PHASES[0]);
+    setBuildStatus(createBuildStatus(0, latestPrompt, mode));
 
     phaseTimerRef.current = setInterval(() => {
       phaseIndexRef.current += 1;
       if (phaseIndexRef.current < BUILD_PHASES.length) {
-        setBuildStatus(BUILD_PHASES[phaseIndexRef.current]);
+        setBuildStatus(createBuildStatus(phaseIndexRef.current, latestPrompt, mode));
       } else {
         if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
       }
     }, 2500);
   };
 
-  const stopBuildProgress = () => {
+  const stopBuildProgress = (latestPrompt: string, mode: "create" | "update") => {
     if (phaseTimerRef.current) {
       clearInterval(phaseTimerRef.current);
       phaseTimerRef.current = null;
     }
-    setBuildStatus({ phase: "done", detail: "Klaar! ✅", progress: 100 });
+    setBuildStatus(createBuildStatus(BUILD_PHASES.length - 1, latestPrompt, mode, true));
     setTimeout(() => setBuildStatus(null), 2000);
   };
 
   const handleSend = async (input: string) => {
     if (!hasStarted) setHasStarted(true);
 
+    const mode = generatedHtml ? "update" : "create";
+
     const userMsg: ChatMessage = { role: "user", content: input };
     const updatedMessages = [...messages, userMsg];
-    const conversationForAi = updatedMessages.filter((message) => message.role === "user");
+    const conversationForAi: ChatMessage[] = generatedHtml
+      ? [{ role: "user", content: `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}` }]
+      : [userMsg];
+
     setMessages(updatedMessages);
     setIsLoading(true);
-    startBuildProgress();
+    startBuildProgress(input, mode);
 
     let fullResponse = "";
 
@@ -106,31 +142,34 @@ const Index = () => {
               {
                 role: "assistant",
                 content: isSameHtml
-                  ? `Ik heb je verzoek verwerkt, maar de output bleef vrijwel gelijk. Geef iets specifieker aan wat anders moet.`
-                  : generatedHtml
-                    ? `Klaar — ik heb de app bijgewerkt op basis van je laatste verzoek: "${input}".`
-                    : `Klaar — ik heb een eerste werkende versie gemaakt op basis van: "${input}".`,
+                  ? `Ik heb je verzoek verwerkt, maar de output bleef vrijwel gelijk.\n\n✓ Wat ik heb gecontroleerd\n• Je laatste wijziging: "${input}"\n• De huidige app als basis voor de update\n• De preview opnieuw opgebouwd\n\nGeef je wijziging iets concreter, bijvoorbeeld: "voeg onder de hero een contactformulier toe" of "maak de boekingsknop blauw en laat hem scrollen naar boeken".`
+                  : mode === "update"
+                    ? `Klaar — ik heb je app bijgewerkt.\n\n✓ Wat ik heb gedaan\n• Je laatste verzoek uitgevoerd: "${input}"\n• Alleen de relevante delen aangepast in plaats van alles opnieuw te maken\n• De live preview vernieuwd met de nieuwe versie\n\n✓ Hoe ik dit heb gedaan\n• Eerst de bestaande HTML als basis genomen\n• Daarna je wijziging gericht in de code verwerkt\n• Tot slot gecontroleerd of de nieuwe output geldig is voor de preview`
+                    : `Klaar — ik heb een eerste versie van je app gemaakt.\n\n✓ Wat ik heb gedaan\n• Je idee omgezet naar een werkende eerste app\n• Een volledige HTML-pagina opgebouwd met inhoud en structuur\n• De live preview direct gevuld zodat je meteen kunt itereren\n\n✓ Hoe ik dit heb gedaan\n• Je beschrijving vertaald naar secties, knoppen en flow\n• De basisfunctionaliteit in de gegenereerde app gezet\n• Alles direct klaargezet voor je volgende wijziging`,
               },
             ]);
           } else {
             setMessages((prev) => [
               ...prev,
-              { role: "assistant", content: fullResponse },
+              {
+                role: "assistant",
+                content: `Ik kreeg geen geldige app terug van de generator.\n\nOntvangen antwoord:\n${fullResponse}`,
+              },
             ]);
           }
           setIsLoading(false);
-          stopBuildProgress();
+          stopBuildProgress(input, mode);
         },
         onError: (error) => {
           toast.error(error);
           setIsLoading(false);
-          stopBuildProgress();
+          stopBuildProgress(input, mode);
         },
       });
     } catch {
       toast.error("Generatie mislukt. Probeer het opnieuw.");
       setIsLoading(false);
-      stopBuildProgress();
+      stopBuildProgress(input, mode);
     }
   };
 
