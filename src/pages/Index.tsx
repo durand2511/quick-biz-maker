@@ -21,39 +21,105 @@ export type BuildStatus = {
   }[];
 };
 
-const BUILD_PHASE_VARIANTS = [
-  [
-    { phase: "analyzing", label: "Verzoek begrijpen", detail: "Even kijken wat je precies wilt…", progress: 12 },
-    { phase: "planning", label: "Wijzigingen plannen", detail: "Ik vergelijk je verzoek met de huidige versie.", progress: 26 },
-    { phase: "generating", label: "Code aanpassen", detail: "Bezig met het herschrijven van de structuur.", progress: 44 },
-    { phase: "components", label: "Onderdelen bijwerken", detail: "Secties, knoppen en formulieren worden aangepast.", progress: 62 },
-    { phase: "styling", label: "Styling verfijnen", detail: "Kleuren, spacing en responsive layout bijwerken.", progress: 78 },
-    { phase: "interactivity", label: "Interactie checken", detail: "Controleren of alles klikt, scrollt en werkt.", progress: 90 },
-    { phase: "finalizing", label: "Preview laden", detail: "Laatste check — bijna klaar!", progress: 96 },
-  ],
-  [
-    { phase: "analyzing", label: "Opdracht lezen", detail: "Ik snap wat je bedoelt, momentje…", progress: 12 },
-    { phase: "planning", label: "Strategie bepalen", detail: "Ik bepaal de slimste manier om dit aan te pakken.", progress: 26 },
-    { phase: "generating", label: "HTML genereren", detail: "De code wordt nu opgebouwd.", progress: 44 },
-    { phase: "components", label: "Componenten plaatsen", detail: "Formulieren, navigatie en content komen op hun plek.", progress: 62 },
-    { phase: "styling", label: "Design polijsten", detail: "Het visuele ontwerp wordt afgewerkt.", progress: 78 },
-    { phase: "interactivity", label: "Functionaliteit testen", detail: "Ik test of alles goed samenwerkt.", progress: 90 },
-    { phase: "finalizing", label: "Afronden", detail: "De preview wordt vernieuwd met je wijzigingen.", progress: 96 },
-  ],
-  [
-    { phase: "analyzing", label: "Input verwerken", detail: "Ik lees je bericht en pak de kern eruit.", progress: 12 },
-    { phase: "planning", label: "Aanpak kiezen", detail: "Even uitzoeken wat de beste route is.", progress: 26 },
-    { phase: "generating", label: "Code schrijven", detail: "De nieuwe versie wordt nu geschreven.", progress: 44 },
-    { phase: "components", label: "Elementen bouwen", detail: "Alle onderdelen worden ingepast.", progress: 62 },
-    { phase: "styling", label: "Look & feel", detail: "Kleuren en typografie worden afgesteld.", progress: 78 },
-    { phase: "interactivity", label: "Werking valideren", detail: "Knoppen, links en formulieren worden gecheckt.", progress: 90 },
-    { phase: "finalizing", label: "Klaar maken", detail: "Nog even de puntjes op de i…", progress: 96 },
-  ],
-];
+const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-const pickBuildPhases = () => BUILD_PHASE_VARIANTS[Math.floor(Math.random() * BUILD_PHASE_VARIANTS.length)];
+function generateContextualPhases(prompt: string, mode: "create" | "update") {
+  const p = prompt.toLowerCase();
 
-let BUILD_PHASES = pickBuildPhases();
+  // Detect what the user is asking for
+  const hasForm = /formulier|form|contact|mail|bericht/i.test(p);
+  const hasBooking = /boek|reserv|afspraak|agenda|planning/i.test(p);
+  const hasColor = /kleur|color|blauw|rood|groen|geel|paars|donker|licht|wit|zwart|theme/i.test(p);
+  const hasNav = /menu|navigat|header|navbar|links/i.test(p);
+  const hasSection = /sectie|section|blok|toevoeg|nieuw|extra/i.test(p);
+  const hasImage = /afbeelding|foto|image|logo|icon|plaatje/i.test(p);
+  const hasText = /tekst|text|titel|naam|beschrijving|inhoud|content/i.test(p);
+  const hasPrice = /prijs|price|tarief|kosten|pakket|pricing/i.test(p);
+  const hasFooter = /footer|onderkant|voettekst/i.test(p);
+  const hasHero = /hero|banner|kop|header.*groot/i.test(p);
+  const hasDownload = /download|pdf|bestand/i.test(p);
+
+  // Build contextual step 1 — analyzing
+  const analyzeLabels = mode === "create"
+    ? [
+        { label: "Je idee analyseren", detail: `Ik begrijp wat je wilt: "${prompt.slice(0, 60)}…"` },
+        { label: "Beschrijving lezen", detail: `Ik verwerk je opdracht en bepaal de opzet.` },
+      ]
+    : [
+        { label: "Wijziging begrijpen", detail: `Ik kijk wat er moet veranderen: "${prompt.slice(0, 60)}…"` },
+        { label: "Verzoek inlezen", detail: `Ik analyseer je aanpassing en vergelijk met de huidige versie.` },
+      ];
+
+  // Build contextual step 2 — planning
+  const planDetails: string[] = [];
+  if (hasForm) planDetails.push("een formulier opzetten");
+  if (hasBooking) planDetails.push("het boekingssysteem inrichten");
+  if (hasColor) planDetails.push("het kleurenschema aanpassen");
+  if (hasNav) planDetails.push("de navigatie bijwerken");
+  if (hasSection) planDetails.push("nieuwe secties toevoegen");
+  if (hasImage) planDetails.push("afbeeldingen inpassen");
+  if (hasPrice) planDetails.push("een prijsoverzicht maken");
+  if (hasHero) planDetails.push("de hero-sectie opbouwen");
+  if (hasDownload) planDetails.push("downloadfunctionaliteit toevoegen");
+  if (hasFooter) planDetails.push("de footer aanpassen");
+  if (hasText) planDetails.push("tekst en inhoud bijwerken");
+  if (planDetails.length === 0) planDetails.push(mode === "create" ? "de app-structuur bepalen" : "de wijzigingen in kaart brengen");
+
+  const planLabel = mode === "create" ? "Structuur bepalen" : "Aanpak plannen";
+  const planDetail = `Ik ga ${planDetails.slice(0, 3).join(", ")}.`;
+
+  // Build contextual step 3 — generating
+  const genStep = mode === "create"
+    ? pick([
+        { label: "App opbouwen", detail: "De volledige pagina wordt nu geschreven." },
+        { label: "Code genereren", detail: "HTML, CSS en JavaScript worden opgebouwd." },
+      ])
+    : pick([
+        { label: "Code bijwerken", detail: "Ik pas de bestaande code gericht aan." },
+        { label: "Wijzigingen schrijven", detail: "De aanpassingen worden nu in de code verwerkt." },
+      ]);
+
+  // Build contextual step 4 — components (specific to what they asked)
+  let compLabel = "Onderdelen plaatsen";
+  let compDetail = "Alle elementen worden ingepast.";
+  if (hasForm) { compLabel = "Formulier bouwen"; compDetail = "Invoervelden, validatie en verzendknop worden toegevoegd."; }
+  else if (hasBooking) { compLabel = "Boekingssysteem maken"; compDetail = "Datumkeuze, tijdslots en bevestiging worden ingebouwd."; }
+  else if (hasNav) { compLabel = "Navigatie opzetten"; compDetail = "Menu-items, mobiel hamburger-menu en scroll-links worden gemaakt."; }
+  else if (hasPrice) { compLabel = "Prijstabel opbouwen"; compDetail = "Pakketten, prijzen en features worden uitgewerkt."; }
+  else if (hasSection) { compLabel = "Secties toevoegen"; compDetail = "Nieuwe contentblokken worden aan de pagina toegevoegd."; }
+  else if (hasHero) { compLabel = "Hero-sectie maken"; compDetail = "De grote kopsectie met titel en call-to-action wordt opgezet."; }
+
+  // Build contextual step 5 — styling
+  let styleLabel = "Styling toepassen";
+  let styleDetail = "Layout, kleuren en responsive design worden afgewerkt.";
+  if (hasColor) { styleLabel = "Kleuren doorvoeren"; styleDetail = "Het nieuwe kleurenschema wordt overal toegepast."; }
+
+  // Build contextual step 6 — interactivity
+  let interLabel = "Werking controleren";
+  let interDetail = "Ik check of alle knoppen en links goed functioneren.";
+  if (hasForm) { interLabel = "Formulier testen"; interDetail = "Validatie en verzendlogica worden gecontroleerd."; }
+  else if (hasBooking) { interLabel = "Boekingsflow testen"; interDetail = "Het hele reserveringsproces wordt doorgelopen."; }
+  else if (hasDownload) { interLabel = "Download testen"; interDetail = "De downloadfunctie wordt gevalideerd."; }
+
+  // Build contextual step 7 — finalizing
+  const finalStep = pick([
+    { label: "Preview verversen", detail: "De bijgewerkte versie wordt geladen." },
+    { label: "Resultaat klaarzetten", detail: "Nog even controleren, dan is het klaar." },
+    { label: "Laatste check", detail: "Alles ziet er goed uit — preview wordt geladen." },
+  ]);
+
+  return [
+    { phase: "analyzing", ...pick(analyzeLabels), progress: 12 },
+    { phase: "planning", label: planLabel, detail: planDetail, progress: 26 },
+    { phase: "generating", ...genStep, progress: 44 },
+    { phase: "components", label: compLabel, detail: compDetail, progress: 62 },
+    { phase: "styling", label: styleLabel, detail: styleDetail, progress: 78 },
+    { phase: "interactivity", label: interLabel, detail: interDetail, progress: 90 },
+    { phase: "finalizing", ...finalStep, progress: 96 },
+  ];
+}
+
+let BUILD_PHASES = generateContextualPhases("", "create");
 
 const createBuildStatus = (
   activeIndex: number,
@@ -63,9 +129,9 @@ const createBuildStatus = (
 ): BuildStatus => ({
   phase: done ? "done" : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].phase,
   detail: done
-    ? mode === "update"
-      ? "Klaar — je app is bijgewerkt en de preview is vernieuwd."
-      : "Klaar — je eerste versie staat live in de preview."
+    ? pick(mode === "update"
+        ? ["Klaar — je app is bijgewerkt!", "Gedaan, de preview is vernieuwd.", "Alles is doorgevoerd. Bekijk het resultaat →"]
+        : ["Je app staat klaar in de preview!", "Eerste versie is live — check het rechts.", "Gebouwd en geladen. Laat maar weten wat je wilt aanpassen."])
     : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].detail,
   progress: done ? 100 : BUILD_PHASES[Math.min(activeIndex, BUILD_PHASES.length - 1)].progress,
   mode,
@@ -105,7 +171,7 @@ const Index = () => {
       phaseTimerRef.current = null;
     }
 
-    BUILD_PHASES = pickBuildPhases();
+    BUILD_PHASES = generateContextualPhases(latestPrompt, mode);
     phaseIndexRef.current = 0;
     setBuildStatus(createBuildStatus(0, latestPrompt, mode));
 
