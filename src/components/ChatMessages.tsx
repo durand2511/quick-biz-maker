@@ -53,7 +53,13 @@ const ChatMessages = ({ messages, isLoading, buildStatus }: Props) => {
               </span>
             </div>
             {buildStatus && (
-              <Progress value={buildStatus.progress} className="h-1.5" />
+              <>
+                <Progress value={buildStatus.progress} className="h-1.5" />
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">
+                  <span>AI builder actief</span>
+                  <span>{buildStatus.progress}%</span>
+                </div>
+              </>
             )}
           </div>
         </div>
