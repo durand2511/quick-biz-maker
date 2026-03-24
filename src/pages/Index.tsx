@@ -1,63 +1,103 @@
-import { useState } from "react";
-import AppBuilderForm, { type AppConfig } from "@/components/AppBuilderForm";
-import AppPreview from "@/components/AppPreview";
-import { generateAppHTML } from "@/lib/generateApp";
+import { useState, useRef, useEffect } from "react";
 import { Wand2 } from "lucide-react";
+import ChatInput from "@/components/ChatInput";
+import ChatMessages from "@/components/ChatMessages";
+import LivePreview from "@/components/LivePreview";
+import { streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
+import { toast } from "sonner";
 
 const Index = () => {
-  const [generatedHTML, setGeneratedHTML] = useState<string | null>(null);
-  const [config, setConfig] = useState<AppConfig | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleGenerate = async (newConfig: AppConfig) => {
-    setIsGenerating(true);
-    // Simulate a brief generation delay for UX
-    await new Promise((r) => setTimeout(r, 1200));
-    const html = generateAppHTML(newConfig);
-    setGeneratedHTML(html);
-    setConfig(newConfig);
-    setIsGenerating(false);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async (input: string) => {
+    const userMsg: ChatMessage = { role: "user", content: input };
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
+    setIsLoading(true);
+
+    let fullResponse = "";
+
+    try {
+      await streamGenerateApp({
+        messages: updatedMessages,
+        currentHtml: generatedHtml,
+        onDelta: (chunk) => {
+          fullResponse += chunk;
+        },
+        onDone: () => {
+          // Clean up: strip markdown fences if present
+          let html = fullResponse;
+          if (html.includes("```html")) {
+            html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "");
+          }
+          html = html.trim();
+
+          if (html.includes("<!DOCTYPE") || html.includes("<html")) {
+            setGeneratedHtml(html);
+            setMessages((prev) => [
+              ...prev,
+              { role: "assistant", content: html },
+            ]);
+          } else {
+            // Non-HTML response (explanation, question, etc.)
+            setMessages((prev) => [
+              ...prev,
+              { role: "assistant", content: fullResponse },
+            ]);
+          }
+          setIsLoading(false);
+        },
+        onError: (error) => {
+          toast.error(error);
+          setIsLoading(false);
+        },
+      });
+    } catch (e) {
+      toast.error("Failed to generate app. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto flex items-center gap-3 px-4 py-5">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary">
-            <Wand2 className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold leading-tight">AppForge</h1>
-            <p className="text-sm text-muted-foreground">Generate a business website in seconds</p>
-          </div>
+      <header className="flex items-center gap-3 border-b border-border bg-card px-5 py-3">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
+          <Wand2 className="h-4 w-4 text-primary-foreground" />
+        </div>
+        <div>
+          <h1 className="text-base font-bold leading-tight">AppForge</h1>
+          <p className="text-xs text-muted-foreground">Describe → Generate → Ship</p>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className={`grid gap-8 ${generatedHTML ? "lg:grid-cols-[380px_1fr]" : "max-w-lg mx-auto"}`}>
-          {/* Form Panel */}
-          <div className="space-y-1">
-            {generatedHTML && (
-              <h2 className="text-lg font-semibold mb-4">Configuration</h2>
-            )}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <AppBuilderForm onGenerate={handleGenerate} isGenerating={isGenerating} />
-            </div>
-          </div>
-
-          {/* Preview Panel */}
-          {generatedHTML && config && (
-            <AppPreview html={generatedHTML} businessName={config.businessName} />
-          )}
+      {/* Main layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Chat panel */}
+        <div className="w-[400px] flex flex-col border-r border-border shrink-0">
+          <ChatMessages messages={messages} isLoading={isLoading} />
+          <div ref={messagesEndRef} />
+          <ChatInput
+            onSend={handleSend}
+            isLoading={isLoading}
+            placeholder={
+              generatedHtml
+                ? "Describe changes (e.g. 'Add a pricing section')"
+                : "Describe your app idea..."
+            }
+          />
         </div>
 
-        {!generatedHTML && (
-          <div className="text-center mt-12 text-muted-foreground">
-            <p className="text-sm">Fill in your business details above and click Generate to see your app.</p>
-          </div>
-        )}
-      </main>
+        {/* Preview panel */}
+        <LivePreview html={generatedHtml} />
+      </div>
     </div>
   );
 };
