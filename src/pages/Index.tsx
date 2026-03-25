@@ -495,6 +495,13 @@ const Index = () => {
                 onClose={() => setShowPublish(false)}
               />
             )}
+
+            {showFiles && (
+              <FileManager
+                projectId={currentProject?.id}
+                onClose={() => setShowFiles(false)}
+              />
+            )}
           </div>
         )}
       </div>
