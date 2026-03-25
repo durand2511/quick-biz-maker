@@ -124,20 +124,6 @@ const Index = () => {
             saveChatToProject(updated);
             return updated;
           });
-        } else {
-          // Regular build: add details text to the last assistant message (under its card)
-          setMessages((prev) => {
-            const updated = [...prev];
-            // Find last assistant message and add the summary as details
-            for (let i = updated.length - 1; i >= 0; i--) {
-              if (updated[i].role === "assistant" && updated[i].title) {
-                updated[i] = { ...updated[i], details: input };
-                break;
-              }
-            }
-            saveChatToProject(updated);
-            return updated;
-          });
         }
 
         setIsLoading(false);
