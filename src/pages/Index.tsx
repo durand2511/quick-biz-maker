@@ -482,7 +482,7 @@ const Index = () => {
                       onRequestPlan={handleRequestPlan}
                       onCancel={handleCancel}
                       isLoading={isLoading}
-                      placeholder="Beschrijf wijzigingen..."
+                      placeholder="Vraag Mellow..."
                       plan={plan}
                       onApprovePlan={handleApprovePlan}
                       onRejectPlan={handleRejectPlan}
