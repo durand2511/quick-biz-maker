@@ -437,7 +437,6 @@ const Index = () => {
                 ) : (
                   <>
                     <ChatMessages messages={messages} isLoading={isLoading} loadingText={loadingText} />
-                    <div ref={messagesEndRef} />
                     <ChatInput
                       onSend={handleSend}
                       onRequestPlan={handleRequestPlan}

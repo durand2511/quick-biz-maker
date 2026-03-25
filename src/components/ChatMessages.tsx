@@ -1,12 +1,11 @@
 import type { ChatMessage } from "@/lib/aiStream";
 import { User, Loader2, CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface Props {
   messages: ChatMessage[];
   isLoading: boolean;
   loadingText?: string;
-  lastAssistantIndex?: number;
 }
 
 const AnimatedDots = () => {
@@ -46,13 +45,19 @@ const AssistantMessage = ({ msg, isBusy }: { msg: ChatMessage; isBusy?: boolean 
 };
 
 const ChatMessages = ({ messages, isLoading, loadingText }: Props) => {
-  // Find the last assistant message index to show spinner on it while loading
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change or loading state changes
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading, loadingText]);
+
   const lastAssistantIdx = isLoading
     ? messages.reduce((last, msg, i) => (msg.role === "assistant" ? i : last), -1)
     : -1;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
       {messages.map((msg, i) => (
         <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : ""}`}>
           {msg.role === "assistant" ? (
@@ -87,6 +92,8 @@ const ChatMessages = ({ messages, isLoading, loadingText }: Props) => {
           </div>
         </div>
       )}
+
+      <div ref={bottomRef} />
     </div>
   );
 };
