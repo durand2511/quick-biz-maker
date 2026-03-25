@@ -242,9 +242,17 @@ const Index = () => {
 
             <div className="flex flex-1 overflow-hidden">
               <div className="w-[380px] flex flex-col border-r border-border shrink-0">
-                <ChatMessages messages={messages} isLoading={isLoading} loadingText={loadingText} />
-                <div ref={messagesEndRef} />
-                <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+                {messages.length === 0 && !isLoading ? (
+                  <div className="flex-1 flex flex-col items-center justify-center px-4">
+                    <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+                  </div>
+                ) : (
+                  <>
+                    <ChatMessages messages={messages} isLoading={isLoading} loadingText={loadingText} />
+                    <div ref={messagesEndRef} />
+                    <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+                  </>
+                )}
               </div>
               <LivePreview html={generatedHtml} isStreaming={isStreaming} />
             </div>
