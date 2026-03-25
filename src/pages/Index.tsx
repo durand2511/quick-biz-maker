@@ -332,6 +332,13 @@ const Index = () => {
     setCurrentView("home");
   };
 
+  const handleNewChat = async () => {
+    saveCurrentProject();
+    resetProjectState();
+    setCurrentView("editor");
+    await showInitAnimation();
+  };
+
   const handleOpenProject = (project: AppProject) => {
     // Save current project before switching
     saveCurrentProject();
