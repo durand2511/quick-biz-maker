@@ -19,9 +19,12 @@ JE GEDRAG:
 
 JE ANTWOORD MOET ALTIJD GELDIG JSON ZIJN in dit formaat:
 {
-  "message": "Je antwoord aan de gebruiker",
+  "title": "Korte samenvatting van de actie (3-6 woorden, bijv. 'Navigatie kleuren aanpassen', 'Contactformulier toevoegen')",
+  "message": "Je antwoord aan de gebruiker (uitleg wat je gaat doen of je vraag)",
   "shouldBuild": true of false
 }
+
+De "title" is een korte, beschrijvende titel van wat er gebeurt/gevraagd wordt. Bij shouldBuild=true beschrijft het de wijziging. Bij shouldBuild=false beschrijft het het onderwerp.
 
 NIETS ANDERS. Alleen dit JSON-object.`;
 

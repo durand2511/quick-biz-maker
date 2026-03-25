@@ -5,6 +5,7 @@ const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-ai`;
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  title?: string; // Card title for assistant build messages
 }
 
 /** Call the conversational AI to understand intent and respond naturally */
