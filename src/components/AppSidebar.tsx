@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Home, Search, FolderOpen, Clock, Plus, Trash2, Globe } from "lucide-react";
+import mellowLogo from "@/assets/mellow-logo.png";
 import { type AppProject, getProjects, deleteProject } from "@/lib/projects";
 import { toast } from "sonner";
 
@@ -54,11 +55,9 @@ const AppSidebar = ({
   return (
     <aside className="w-56 shrink-0 h-screen flex flex-col bg-sidebar-background border-r border-sidebar-border">
       {/* Logo / Brand */}
-      <div className="px-4 py-4 flex items-center gap-2">
-        <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground text-xs font-bold">A</span>
-        </div>
-        <span className="text-sm font-semibold text-sidebar-foreground">AppForge</span>
+      <div className="px-4 py-4 flex items-center gap-2.5">
+        <img src={mellowLogo} alt="Mellow" className="w-7 h-7 rounded-md object-contain" />
+        <span className="text-sm font-semibold text-sidebar-foreground">Mellow</span>
       </div>
 
       {/* Navigation */}
