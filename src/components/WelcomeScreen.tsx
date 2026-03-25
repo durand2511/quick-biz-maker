@@ -73,7 +73,7 @@ const WelcomeScreen = ({ onSend }: Props) => {
             onKeyDown={handleKeyDown}
             placeholder="Describe the app you want to build..."
             rows={2}
-            className="w-full resize-none bg-transparent text-foreground text-sm placeholder:text-muted-foreground focus:outline-none"
+            className="w-full resize-none bg-transparent text-foreground text-sm placeholder:text-muted-foreground focus:outline-none overflow-y-auto"
           />
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs text-muted-foreground">Press Enter to generate</span>
