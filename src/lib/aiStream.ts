@@ -1,6 +1,7 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const GENERATE_URL = `${SUPABASE_URL}/functions/v1/generate-app`;
 const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-ai`;
+const PLAN_URL = `${SUPABASE_URL}/functions/v1/plan-ai`;
 
 export interface ChatMessage {
   role: "user" | "assistant";
