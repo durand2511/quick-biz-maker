@@ -72,15 +72,16 @@ const Index = () => {
     }
   };
 
-  const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string) => {
+  const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string, images?: string[]) => {
     startLoadingCycle();
     setIsStreaming(true);
 
     const mode = generatedHtml ? "update" : "create";
-    const userMsg: ChatMessage = { role: "user", content: input };
-    const conversationForAi: ChatMessage[] = generatedHtml
-      ? [{ role: "user", content: `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}` }]
-      : [userMsg];
+    const userContent = generatedHtml
+      ? `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}`
+      : input;
+    const userMsg: ChatMessage = { role: "user", content: userContent, ...(images && { images }) };
+    const conversationForAi: ChatMessage[] = [userMsg];
 
     let fullResponse = "";
     let lastPreviewUpdate = 0;
