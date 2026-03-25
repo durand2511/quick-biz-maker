@@ -77,7 +77,10 @@ const Index = () => {
     if (!images || images.length === 0) return html;
     let result = html;
     images.forEach((dataUrl, i) => {
-      result = result.replaceAll(`{{USER_IMAGE_${i + 1}}}`, dataUrl);
+      const placeholder = `{{USER_IMAGE_${i + 1}}}`;
+      while (result.includes(placeholder)) {
+        result = result.replace(placeholder, dataUrl);
+      }
     });
     return result;
   };
