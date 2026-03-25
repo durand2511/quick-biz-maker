@@ -487,7 +487,7 @@ const Index = () => {
                   </>
                 )}
               </div>
-              <LivePreview html={generatedHtml} isStreaming={isStreaming} />
+              <LivePreview key={sessionId} html={generatedHtml} isStreaming={isStreaming} />
             </div>
 
             {showPublish && currentProject && (
