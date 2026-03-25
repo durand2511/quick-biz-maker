@@ -22,6 +22,13 @@ const LOADING_STAGES = [
   "Bijna klaar...",
 ];
 
+const INIT_STAGES = [
+  "Nieuw project aanmaken...",
+  "Werkruimte initialiseren...",
+  "Sessie voorbereiden...",
+  "Klaar",
+];
+
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -34,10 +41,22 @@ const Index = () => {
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
   const [previewKey, setPreviewKey] = useState(() => crypto.randomUUID());
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [initText, setInitText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  /** Save current project state before switching away */
+  const saveCurrentProject = () => {
+    if (currentProject) {
+      updateProject(currentProject.id, {
+        chatHistory: messages,
+        html: generatedHtml || currentProject.html,
+      });
+    }
+  };
 
   /** Completely reset all project state for a fresh start */
   const resetProjectState = () => {
@@ -47,6 +66,18 @@ const Index = () => {
     setPlan(null);
     setPlanPrompt("");
     setPreviewKey(crypto.randomUUID());
+  };
+
+  /** Show initialization animation */
+  const showInitAnimation = async () => {
+    setIsInitializing(true);
+    for (const stage of INIT_STAGES) {
+      setInitText(stage);
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    await new Promise((r) => setTimeout(r, 300));
+    setIsInitializing(false);
+    setInitText("");
   };
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -181,9 +212,11 @@ const Index = () => {
 
   const handleSend = async (input: string, attachments?: File[]) => {
     if (currentView !== "editor") {
-      // Starting a new project — fully reset state so nothing leaks from previous project
+      // Save current project before starting fresh
+      saveCurrentProject();
       resetProjectState();
       setCurrentView("editor");
+      await showInitAnimation();
     }
 
     // Convert image attachments to base64
@@ -294,15 +327,20 @@ const Index = () => {
   };
 
   const handleNewProject = () => {
+    saveCurrentProject();
     resetProjectState();
     setCurrentView("home");
   };
 
   const handleOpenProject = (project: AppProject) => {
+    // Save current project before switching
+    saveCurrentProject();
+    // Load selected project's isolated state
     setCurrentProject(project);
     setGeneratedHtml(project.html);
     setMessages(project.chatHistory || []);
     setPlan(null);
+    setPlanPrompt("");
     setPreviewKey(crypto.randomUUID());
     setCurrentView("editor");
   };
@@ -342,6 +380,14 @@ const Index = () => {
 
         {currentView === "editor" && (
           <>
+            {isInitializing && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground animate-pulse">{initText}</p>
+                </div>
+              </div>
+            )}
             <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="relative group">
