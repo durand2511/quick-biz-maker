@@ -55,9 +55,17 @@ serve(async (req) => {
       ? "\n\nDe gebruiker heeft al een bestaande app/website. Als ze wijzigingen willen, zet shouldBuild op true."
       : "\n\nDe gebruiker heeft nog geen app. Als ze iets willen bouwen, zet shouldBuild op true.";
 
+    // Strip images from messages for chat-ai — it only needs text to determine intent
+    const textOnlyMessages = messages.map((msg: any) => ({
+      role: msg.role,
+      content: msg.images && msg.images.length > 0
+        ? msg.content + "\n[Gebruiker heeft een afbeelding geüpload]"
+        : msg.content,
+    }));
+
     const aiMessages = [
       { role: "system", content: SYSTEM_PROMPT + contextNote },
-      ...messages.map(toAiMessage),
+      ...textOnlyMessages,
     ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
