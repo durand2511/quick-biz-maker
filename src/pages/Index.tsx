@@ -40,7 +40,7 @@ const Index = () => {
   const [showPublish, setShowPublish] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
-  const [previewKey, setPreviewKey] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [isInitializing, setIsInitializing] = useState(false);
   const [initText, setInitText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
