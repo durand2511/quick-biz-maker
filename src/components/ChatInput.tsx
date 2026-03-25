@@ -6,8 +6,13 @@ interface Attachment {
   preview?: string;
 }
 
+export interface PlanStep {
+  title: string;
+  description: string;
+}
+
 export interface PlanData {
-  steps: string[];
+  steps: PlanStep[];
   summary: string;
 }
 
