@@ -1,11 +1,23 @@
 import type { ChatMessage } from "@/lib/aiStream";
 import { Bot, User, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Props {
   messages: ChatMessage[];
   isLoading: boolean;
   loadingText?: string;
 }
+
+const AnimatedDots = () => {
+  const [dots, setDots] = useState("");
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+    }, 400);
+    return () => clearInterval(timer);
+  }, []);
+  return <span className="inline-block w-4">{dots}</span>;
+};
 
 const ChatMessages = ({ messages, isLoading, loadingText }: Props) => {
   return (
@@ -35,12 +47,13 @@ const ChatMessages = ({ messages, isLoading, loadingText }: Props) => {
       ))}
 
       {isLoading && (
-        <div className="flex gap-2.5">
+        <div className="flex gap-2.5 animate-in fade-in duration-300">
           <div className="w-6 h-6 rounded-md bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
           </div>
-          <div className="bg-secondary rounded-xl px-3.5 py-2 text-sm text-muted-foreground max-w-[85%]">
-            <span>{loadingText || "Even nadenken..."}</span>
+          <div className="bg-secondary rounded-xl px-3.5 py-2 text-sm text-muted-foreground max-w-[85%] transition-all duration-300">
+            <span>{loadingText || "Even nadenken"}</span>
+            <AnimatedDots />
           </div>
         </div>
       )}

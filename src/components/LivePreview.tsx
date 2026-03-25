@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Smartphone, Monitor, FileDown } from "lucide-react";
+import { ExternalLink, Smartphone, Monitor, FileDown, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 interface Props {
   html: string | null;
+  isStreaming?: boolean;
 }
 
-const LivePreview = ({ html }: Props) => {
+const LivePreview = ({ html, isStreaming }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
 
   const handleDownloadHtml = () => {
@@ -51,6 +52,12 @@ const LivePreview = ({ html }: Props) => {
           <div className="w-3 h-3 rounded-full bg-accent-foreground/20" />
           <div className="w-3 h-3 rounded-full bg-accent-foreground/15" />
           <span className="text-xs text-muted-foreground ml-3">Preview</span>
+          {isStreaming && (
+            <div className="flex items-center gap-1.5 ml-2 text-xs text-primary animate-pulse">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Aan het opbouwen...</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setIsMobile(false)}>

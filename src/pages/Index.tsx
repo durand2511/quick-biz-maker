@@ -14,17 +14,44 @@ import { toast } from "sonner";
 
 type ViewState = "home" | "editor" | "projects";
 
+const LOADING_STAGES = [
+  "Verzoek verwerken...",
+  "Componenten updaten...",
+  "Wijzigingen toepassen...",
+  "Layout aanpassen...",
+  "Bijna klaar...",
+];
+
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState("Even nadenken...");
+  const [loadingText, setLoadingText] = useState(LOADING_STAGES[0]);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [currentProject, setCurrentProject] = useState<AppProject | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const loadingStageRef = useRef(0);
+  const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => { return () => { if (loadingTimerRef.current) clearInterval(loadingTimerRef.current); }; }, []);
+
+  const startLoadingCycle = () => {
+    loadingStageRef.current = 0;
+    setLoadingText(LOADING_STAGES[0]);
+    if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
+    loadingTimerRef.current = setInterval(() => {
+      loadingStageRef.current = Math.min(loadingStageRef.current + 1, LOADING_STAGES.length - 1);
+      setLoadingText(LOADING_STAGES[loadingStageRef.current]);
+    }, 2200);
+  };
+
+  const stopLoadingCycle = () => {
+    if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
+    loadingTimerRef.current = null;
+  };
 
   const saveChatToProject = (msgs: ChatMessage[]) => {
     if (currentProject) {
@@ -44,7 +71,7 @@ const Index = () => {
 
   const handleSend = async (input: string) => {
     if (currentView !== "editor") setCurrentView("editor");
-    
+
     const userMsg: ChatMessage = { role: "user", content: input };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
@@ -52,14 +79,13 @@ const Index = () => {
     setLoadingText("Even nadenken...");
 
     try {
-      // Step 1: Chat AI understands intent
+      // Step 1: Chat AI understands intent (fast model)
       const chatResponse = await chatWithAI({
         messages: updatedMessages,
         hasExistingApp: !!generatedHtml,
       });
 
       if (!chatResponse.shouldBuild) {
-        // Just a conversation — show the AI response
         const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message }];
         setMessages(newMsgs);
         saveChatToProject(newMsgs);
@@ -67,24 +93,45 @@ const Index = () => {
         return;
       }
 
-      // Step 2: Show AI response and start building
+      // Step 2: Show AI response immediately, then start building
       const msgsWithResponse = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message }];
       setMessages(msgsWithResponse);
       saveChatToProject(msgsWithResponse);
-      setLoadingText("Bezig met bouwen...");
 
-      // Step 3: Generate HTML
+      // Start cycling loading messages
+      startLoadingCycle();
+      setIsStreaming(true);
+
+      // Step 3: Stream HTML with progressive preview updates
       const mode = generatedHtml ? "update" : "create";
       const conversationForAi: ChatMessage[] = generatedHtml
         ? [{ role: "user", content: `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}` }]
         : [userMsg];
 
       let fullResponse = "";
+      let lastPreviewUpdate = 0;
+      const PREVIEW_INTERVAL = 800; // Update preview every 800ms for perceived speed
 
       await streamGenerateApp({
         messages: conversationForAi,
         currentHtml: generatedHtml,
-        onDelta: (chunk) => { fullResponse += chunk; },
+        onDelta: (chunk) => {
+          fullResponse += chunk;
+
+          // Progressive preview: update iframe periodically during streaming
+          const now = Date.now();
+          if (now - lastPreviewUpdate > PREVIEW_INTERVAL) {
+            const partial = fullResponse.trim();
+            // Only show if we have enough HTML structure
+            if (partial.includes("<body") && partial.length > 500) {
+              // Auto-close open tags for valid partial render
+              let previewHtml = partial;
+              if (!previewHtml.includes("</body>")) previewHtml += "\n</body></html>";
+              setGeneratedHtml(previewHtml);
+            }
+            lastPreviewUpdate = now;
+          }
+        },
         onDone: () => {
           let html = fullResponse;
           if (html.includes("```html")) html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "");
@@ -95,15 +142,21 @@ const Index = () => {
             saveHtmlToProject(html);
           }
           setIsLoading(false);
+          setIsStreaming(false);
+          stopLoadingCycle();
         },
         onError: (error) => {
           toast.error(error);
           setIsLoading(false);
+          setIsStreaming(false);
+          stopLoadingCycle();
         },
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Er ging iets mis. Probeer het opnieuw.");
       setIsLoading(false);
+      setIsStreaming(false);
+      stopLoadingCycle();
     }
   };
 
@@ -193,7 +246,7 @@ const Index = () => {
                 <div ref={messagesEndRef} />
                 <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
               </div>
-              <LivePreview html={generatedHtml} />
+              <LivePreview html={generatedHtml} isStreaming={isStreaming} />
             </div>
 
             {showPublish && currentProject && (
