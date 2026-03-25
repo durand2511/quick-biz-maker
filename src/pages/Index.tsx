@@ -58,14 +58,24 @@ const Index = () => {
     }
   };
 
-  /** Completely reset all project state for a fresh start */
+  /** Completely reset all project state for a fresh start — hard reset */
   const resetProjectState = () => {
+    // Abort any in-flight requests
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    // Stop loading cycles
+    setIsLoading(false);
+    setIsStreaming(false);
+    stopLoadingCycle();
+    // Clear all state
     setMessages([]);
     setGeneratedHtml(null);
     setCurrentProject(null);
     setPlan(null);
     setPlanPrompt("");
-    setPreviewKey(crypto.randomUUID());
+    setShowPublish(false);
+    // New session ID forces full remount of editor components
+    setSessionId(crypto.randomUUID());
   };
 
   /** Show initialization animation */
