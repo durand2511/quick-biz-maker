@@ -132,7 +132,13 @@ CRITICAL RULES:
 - If the user asks to REMOVE something, remove ONLY that specific element/section.
 - If the user asks to FIX something, fix ONLY the broken part.
 - All text content should be in Dutch (Netherlands).
-- If the user mentions uploading an image, use the placeholder exactly as provided (e.g. {{USER_IMAGE_1}}, {{USER_IMAGE_2}}) as the src attribute for <img> tags. The placeholder will be replaced with the actual image data automatically.
+- If the user mentions uploading an image, use the placeholder exactly as provided (e.g. {{USER_IMAGE_1}}, {{USER_IMAGE_2}}) as the src attribute for <img> tags.
+
+FUNCTIONALITY RULE:
+- If you add any new UI element (button, form, link, tab, modal), it MUST have working JavaScript.
+- Never add a button without an onclick handler or event listener.
+- Never add a form without submit handling, validation, and success feedback.
+- Every visible interactive element must function correctly.
 
 THINK OF IT AS A DIFF: What is the smallest possible change to the existing code that satisfies the user's request? Make exactly that change and nothing more.
 
