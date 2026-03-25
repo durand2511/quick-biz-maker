@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Wand2, Globe } from "lucide-react";
+import { Wand2, Globe, ChevronDown, Home, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
