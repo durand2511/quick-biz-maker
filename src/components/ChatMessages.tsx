@@ -20,11 +20,9 @@ const AnimatedDots = () => {
 };
 
 const AssistantMessage = ({ msg }: { msg: ChatMessage }) => {
-  const isPlanMsg = msg.title === "Plan goedgekeurd" || msg.title === "Plan afgewezen";
-
   return (
     <div className="space-y-2 max-w-[90%]">
-      {msg.title && !isPlanMsg && (
+      {msg.title && (
         <div className="rounded-xl border border-border bg-card p-3">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
@@ -32,15 +30,10 @@ const AssistantMessage = ({ msg }: { msg: ChatMessage }) => {
           </div>
         </div>
       )}
-      {isPlanMsg && msg.title && (
-        <div className="px-1">
-          <span className="text-xs font-medium text-muted-foreground">{msg.title}</span>
-        </div>
-      )}
       <div className="px-1">
         <div className="whitespace-pre-wrap leading-relaxed text-sm text-foreground">{msg.content}</div>
         {msg.details && (
-          <div className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground mt-1">{msg.details}</div>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground mt-1">{msg.details}</div>
         )}
       </div>
     </div>
