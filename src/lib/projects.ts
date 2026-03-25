@@ -1,9 +1,11 @@
+import { supabase } from "@/integrations/supabase/client";
 import type { ChatMessage } from "@/lib/aiStream";
 
 export type DomainStatus = "none" | "pending" | "connected";
 
 export interface AppProject {
   id: string;
+  userId: string;
   name: string;
   description: string;
   html: string;
@@ -16,62 +18,102 @@ export interface AppProject {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "appforge_projects";
+function rowToProject(row: any): AppProject {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    description: row.description || "",
+    html: row.html || "",
+    domain: row.domain || "",
+    domainStatus: (row.domain_status || "none") as DomainStatus,
+    publishedUrl: row.published_url,
+    visibility: (row.visibility || "public") as "public" | "private",
+    chatHistory: (row.chat_history as ChatMessage[]) || [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
-function readAll(): AppProject[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
+export async function getProjects(): Promise<AppProject[]> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch projects:", error);
     return [];
   }
+  return (data || []).map(rowToProject);
 }
 
-function writeAll(projects: AppProject[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+export async function getProject(id: string): Promise<AppProject | null> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return rowToProject(data);
 }
 
-export function getProjects(): AppProject[] {
-  return readAll().sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+export async function createProject(name: string, html: string, userId: string): Promise<AppProject | null> {
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({
+      user_id: userId,
+      name,
+      html,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to create project:", error);
+    return null;
+  }
+  return rowToProject(data);
 }
 
-export function getProject(id: string): AppProject | null {
-  return readAll().find((p) => p.id === id) || null;
+export async function updateProject(
+  id: string,
+  updates: Partial<Omit<AppProject, "id" | "createdAt" | "userId">>
+): Promise<AppProject | null> {
+  const dbUpdates: Record<string, any> = { updated_at: new Date().toISOString() };
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+  if (updates.html !== undefined) dbUpdates.html = updates.html;
+  if (updates.domain !== undefined) dbUpdates.domain = updates.domain;
+  if (updates.domainStatus !== undefined) dbUpdates.domain_status = updates.domainStatus;
+  if (updates.publishedUrl !== undefined) dbUpdates.published_url = updates.publishedUrl;
+  if (updates.visibility !== undefined) dbUpdates.visibility = updates.visibility;
+  if (updates.chatHistory !== undefined) dbUpdates.chat_history = updates.chatHistory;
+
+  const { data, error } = await supabase
+    .from("projects")
+    .update(dbUpdates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to update project:", error);
+    return null;
+  }
+  return rowToProject(data);
 }
 
-export function createProject(name: string, html: string): AppProject {
-  const project: AppProject = {
-    id: crypto.randomUUID(),
-    name,
-    description: "",
-    html,
-    domain: "",
-    domainStatus: "none",
-    publishedUrl: null,
-    visibility: "public",
-    chatHistory: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  const all = readAll();
-  all.push(project);
-  writeAll(all);
-  return project;
-}
+export async function deleteProject(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", id);
 
-export function updateProject(id: string, updates: Partial<Omit<AppProject, "id" | "createdAt">>): AppProject | null {
-  const all = readAll();
-  const idx = all.findIndex((p) => p.id === id);
-  if (idx === -1) return null;
-  all[idx] = { ...all[idx], ...updates, updatedAt: new Date().toISOString() };
-  writeAll(all);
-  return all[idx];
-}
-
-export function deleteProject(id: string): boolean {
-  const all = readAll();
-  const filtered = all.filter((p) => p.id !== id);
-  if (filtered.length === all.length) return false;
-  writeAll(filtered);
+  if (error) {
+    console.error("Failed to delete project:", error);
+    return false;
+  }
   return true;
 }
