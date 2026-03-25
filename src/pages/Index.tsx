@@ -327,15 +327,20 @@ const Index = () => {
   };
 
   const handleNewProject = () => {
+    saveCurrentProject();
     resetProjectState();
     setCurrentView("home");
   };
 
   const handleOpenProject = (project: AppProject) => {
+    // Save current project before switching
+    saveCurrentProject();
+    // Load selected project's isolated state
     setCurrentProject(project);
     setGeneratedHtml(project.html);
     setMessages(project.chatHistory || []);
     setPlan(null);
+    setPlanPrompt("");
     setPreviewKey(crypto.randomUUID());
     setCurrentView("editor");
   };
