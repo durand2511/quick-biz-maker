@@ -6,6 +6,7 @@ interface Props {
   messages: ChatMessage[];
   isLoading: boolean;
   loadingText?: string;
+  lastAssistantIndex?: number;
 }
 
 const AnimatedDots = () => {
@@ -19,13 +20,17 @@ const AnimatedDots = () => {
   return <span className="inline-block w-4">{dots}</span>;
 };
 
-const AssistantMessage = ({ msg }: { msg: ChatMessage }) => {
+const AssistantMessage = ({ msg, isBusy }: { msg: ChatMessage; isBusy?: boolean }) => {
   return (
     <div className="space-y-2 max-w-[90%]">
       {msg.title && (
         <div className="rounded-xl border border-border bg-card p-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+            {isBusy ? (
+              <Loader2 className="h-4 w-4 text-primary shrink-0 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+            )}
             <span className="text-sm font-medium text-foreground">{msg.title}</span>
           </div>
         </div>
@@ -41,12 +46,17 @@ const AssistantMessage = ({ msg }: { msg: ChatMessage }) => {
 };
 
 const ChatMessages = ({ messages, isLoading, loadingText }: Props) => {
+  // Find the last assistant message index to show spinner on it while loading
+  const lastAssistantIdx = isLoading
+    ? messages.reduce((last, msg, i) => (msg.role === "assistant" ? i : last), -1)
+    : -1;
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((msg, i) => (
         <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : ""}`}>
           {msg.role === "assistant" ? (
-            <AssistantMessage msg={msg} />
+            <AssistantMessage msg={msg} isBusy={i === lastAssistantIdx} />
           ) : (
             <>
               <div className="flex flex-col items-end gap-1.5 max-w-[85%]">
