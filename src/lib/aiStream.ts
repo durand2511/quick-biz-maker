@@ -44,13 +44,15 @@ export interface PlanResult {
   steps: PlanStep[];
 }
 
-/** Call the plan AI to generate a structured build plan */
+/** Call the plan AI to diagnose issues and generate a fix/build plan */
 export async function planWithAI({
   prompt,
   hasExistingApp,
+  currentHtml,
 }: {
   prompt: string;
   hasExistingApp: boolean;
+  currentHtml?: string | null;
 }): Promise<PlanResult> {
   const resp = await fetch(PLAN_URL, {
     method: "POST",
@@ -58,7 +60,7 @@ export async function planWithAI({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ prompt, hasExistingApp }),
+    body: JSON.stringify({ prompt, hasExistingApp, currentHtml: currentHtml || null }),
   });
 
   if (!resp.ok) {

@@ -172,6 +172,7 @@ const Index = () => {
       const planResult = await planWithAI({
         prompt: input,
         hasExistingApp: !!generatedHtml,
+        currentHtml: generatedHtml,
       });
 
       setPlan({
