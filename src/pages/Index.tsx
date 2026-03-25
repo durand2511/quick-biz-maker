@@ -233,6 +233,12 @@ const Index = () => {
       await showInitAnimation();
     }
 
+    // Ensure a project exists before any AI work
+    if (!currentProject) {
+      const newProject = createProject("Nieuw project", "");
+      setCurrentProject(newProject);
+    }
+
     // Convert image attachments to base64
     let images: string[] | undefined;
     if (attachments && attachments.length > 0) {
