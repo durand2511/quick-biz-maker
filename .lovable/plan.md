@@ -1,15 +1,14 @@
 
 
-## Fix: Plan details styling in chat
+## Plan: Textarea op welkomstscherm laten meegroeien
 
-The plan summary message that appears after approval currently renders with light gray `text-muted-foreground` styling, looking different from other assistant messages. It should use the same card-based style.
+**Probleem**: De textarea op het welkomstscherm (preview-kant) kapt tekst af bij lange invoer. De maximale hoogte is nu 140px, wat niet genoeg is voor langere beschrijvingen.
 
-### Changes
+**Oplossing**: Verhoog de max hoogte van 140px naar 400px en voeg `overflow-y: auto` toe zodat bij zeer lange teksten er een scrollbar verschijnt in plaats van dat tekst verborgen wordt.
 
-**`src/components/ChatMessages.tsx`**
-- Remove the special `isPlanMsg` branch that renders plan titles as small gray text
-- Let plan-approved/rejected messages use the same `rounded-xl border bg-card p-3` card with `CheckCircle2` icon, just like other assistant messages
-- Keep the `details` block but style it slightly more prominent (e.g. `text-sm text-foreground` instead of `text-xs text-muted-foreground`)
+### Technische wijzigingen
 
-This is a single-file change affecting only the `AssistantMessage` component rendering logic.
+**Bestand: `src/components/WelcomeScreen.tsx`**
+- Verhoog max hoogte in de `useEffect` van `140` naar `400`
+- Voeg `overflow-y-auto` toe aan de textarea class zodat bij extreem lange teksten alsnog gescrolld kan worden
 
