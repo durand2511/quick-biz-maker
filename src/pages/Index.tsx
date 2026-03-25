@@ -33,10 +33,21 @@ const Index = () => {
   const [showPublish, setShowPublish] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
+  const [previewKey, setPreviewKey] = useState(() => crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  /** Completely reset all project state for a fresh start */
+  const resetProjectState = () => {
+    setMessages([]);
+    setGeneratedHtml(null);
+    setCurrentProject(null);
+    setPlan(null);
+    setPlanPrompt("");
+    setPreviewKey(crypto.randomUUID());
+  };
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { return () => { if (loadingTimerRef.current) clearInterval(loadingTimerRef.current); }; }, []);
@@ -170,11 +181,8 @@ const Index = () => {
 
   const handleSend = async (input: string, attachments?: File[]) => {
     if (currentView !== "editor") {
-      // Starting a new project from home/projects — keep existing project saved, start fresh
-      setMessages([]);
-      setGeneratedHtml(null);
-      setCurrentProject(null);
-      setPlan(null);
+      // Starting a new project — fully reset state so nothing leaks from previous project
+      resetProjectState();
       setCurrentView("editor");
     }
 
@@ -286,10 +294,7 @@ const Index = () => {
   };
 
   const handleNewProject = () => {
-    setMessages([]);
-    setGeneratedHtml(null);
-    setCurrentProject(null);
-    setPlan(null);
+    resetProjectState();
     setCurrentView("home");
   };
 
@@ -298,6 +303,7 @@ const Index = () => {
     setGeneratedHtml(project.html);
     setMessages(project.chatHistory || []);
     setPlan(null);
+    setPreviewKey(crypto.randomUUID());
     setCurrentView("editor");
   };
 
@@ -399,7 +405,7 @@ const Index = () => {
                   </>
                 )}
               </div>
-              <LivePreview html={generatedHtml} isStreaming={isStreaming} />
+              <LivePreview key={previewKey} html={generatedHtml} isStreaming={isStreaming} />
             </div>
 
             {showPublish && currentProject && (
