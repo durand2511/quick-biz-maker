@@ -40,7 +40,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 400) + "px";
     }
   }, [input]);
 
@@ -259,7 +259,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
             onPaste={handlePaste}
             placeholder={placeholder || "Describe what you want to build..."}
             rows={1}
-            className="flex-1 resize-none bg-transparent text-sm text-foreground focus:outline-none placeholder:text-muted-foreground"
+            className="flex-1 resize-none bg-transparent text-sm text-foreground focus:outline-none placeholder:text-muted-foreground overflow-y-auto"
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
