@@ -289,9 +289,6 @@ const Index = () => {
           <>
             <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
               <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-                  <Wand2 className="h-4 w-4 text-primary-foreground" />
-                </div>
                 <h1 className="text-sm font-bold">{currentProject?.name || "Mellow"}</h1>
               </div>
               <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
