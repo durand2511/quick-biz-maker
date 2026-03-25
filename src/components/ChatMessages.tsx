@@ -46,12 +46,17 @@ const AssistantMessage = ({ msg, isBusy }: { msg: ChatMessage; isBusy?: boolean 
 };
 
 const ChatMessages = ({ messages, isLoading, loadingText }: Props) => {
+  // Find the last assistant message index to show spinner on it while loading
+  const lastAssistantIdx = isLoading
+    ? messages.reduce((last, msg, i) => (msg.role === "assistant" ? i : last), -1)
+    : -1;
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((msg, i) => (
         <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : ""}`}>
           {msg.role === "assistant" ? (
-            <AssistantMessage msg={msg} />
+            <AssistantMessage msg={msg} isBusy={i === lastAssistantIdx} />
           ) : (
             <>
               <div className="flex flex-col items-end gap-1.5 max-w-[85%]">

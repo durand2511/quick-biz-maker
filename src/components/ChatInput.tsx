@@ -303,12 +303,12 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
               disabled={!isLoading && !input.trim() && attachments.length === 0}
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all hover:opacity-80 disabled:opacity-30 ${
                 isLoading
-                  ? "bg-primary text-primary-foreground animate-pulse"
+                  ? "bg-destructive text-destructive-foreground"
                   : "bg-foreground text-background"
               }`}
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Square className="h-3.5 w-3.5 fill-current" />
               ) : (
                 <ArrowUp className="h-4 w-4" />
               )}
