@@ -1,23 +1,34 @@
-import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Square, Paperclip, X, FileText, Image as ImageIcon } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { ArrowUp, Square, Paperclip, X, FileText, Mic, MicOff, Lightbulb } from "lucide-react";
 
 interface Attachment {
   file: File;
   preview?: string;
 }
 
-interface Props {
-  onSend: (message: string, attachments?: File[]) => void;
-  isLoading: boolean;
-  placeholder?: string;
+export interface PlanData {
+  steps: string[];
+  summary: string;
 }
 
-const ChatInput = ({ onSend, isLoading, placeholder }: Props) => {
+interface Props {
+  onSend: (message: string, attachments?: File[]) => void;
+  onRequestPlan: (message: string) => void;
+  isLoading: boolean;
+  placeholder?: string;
+  plan?: PlanData | null;
+  onApprovePlan?: () => void;
+  onRejectPlan?: () => void;
+}
+
+const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onApprovePlan, onRejectPlan }: Props) => {
   const [input, setInput] = useState("");
   const [queued, setQueued] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -74,7 +85,49 @@ const ChatInput = ({ onSend, isLoading, placeholder }: Props) => {
     });
   };
 
-  const isImage = (file: File) => file.type.startsWith("image/");
+  const handlePlan = () => {
+    if (!input.trim() || isLoading) return;
+    onRequestPlan(input.trim());
+  };
+
+  const toggleDictation = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Spraakherkenning wordt niet ondersteund in deze browser.");
+      return;
+    }
+
+    if (isRecording && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "nl-NL";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+
+    recognition.onerror = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
+    setIsRecording(true);
+  }, [isRecording]);
 
   return (
     <div className="p-4 flex flex-col items-center">
@@ -83,15 +136,46 @@ const ChatInput = ({ onSend, isLoading, placeholder }: Props) => {
           Bericht in wachtrij: "{queued.slice(0, 40)}{queued.length > 40 ? "…" : ""}"
         </div>
       )}
+
+      {/* Plan approval card */}
+      {plan && (
+        <div className="w-full max-w-3xl mb-3 rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Lightbulb className="h-4 w-4 text-primary" />
+            Plan
+          </div>
+          <p className="text-sm text-muted-foreground">{plan.summary}</p>
+          <div className="space-y-1.5">
+            {plan.steps.map((step, i) => (
+              <div key={i} className="flex gap-2 text-sm text-foreground">
+                <span className="text-muted-foreground shrink-0">{i + 1}.</span>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={onApprovePlan}
+              className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Goedkeuren
+            </button>
+            <button
+              onClick={onRejectPlan}
+              className="px-4 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Afwijzen
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-3xl space-y-2">
         {/* Attachments preview */}
         {attachments.length > 0 && (
           <div className="flex gap-2 flex-wrap px-1">
             {attachments.map((att, i) => (
-              <div
-                key={i}
-                className="relative group rounded-lg border border-border bg-card overflow-hidden"
-              >
+              <div key={i} className="relative group rounded-lg border border-border bg-card overflow-hidden">
                 {att.preview ? (
                   <img src={att.preview} alt={att.file.name} className="h-16 w-16 object-cover" />
                 ) : (
@@ -113,21 +197,41 @@ const ChatInput = ({ onSend, isLoading, placeholder }: Props) => {
           </div>
         )}
 
-        {/* Input bar */}
-        <div className="flex items-end gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+        {/* Action toolbar above input */}
+        <div className="flex items-center gap-1 px-1">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
-            <Paperclip className="h-4 w-4" />
+            <Paperclip className="h-3.5 w-3.5" />
+            <span>Bijlage</span>
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            onChange={handleFileSelect}
-          />
+          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+          
+          <button
+            onClick={handlePlan}
+            disabled={!input.trim() || isLoading}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
+          >
+            <Lightbulb className="h-3.5 w-3.5" />
+            <span>Plan</span>
+          </button>
+
+          <button
+            onClick={toggleDictation}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+              isRecording
+                ? "text-destructive bg-destructive/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+            <span>{isRecording ? "Stop" : "Dicteer"}</span>
+          </button>
+        </div>
+
+        {/* Input bar */}
+        <div className="flex items-end gap-3 rounded-2xl border border-border bg-card px-4 py-3">
           <textarea
             ref={textareaRef}
             value={input}
