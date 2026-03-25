@@ -212,9 +212,11 @@ const Index = () => {
 
   const handleSend = async (input: string, attachments?: File[]) => {
     if (currentView !== "editor") {
-      // Starting a new project — fully reset state so nothing leaks from previous project
+      // Save current project before starting fresh
+      saveCurrentProject();
       resetProjectState();
       setCurrentView("editor");
+      await showInitAnimation();
     }
 
     // Convert image attachments to base64
