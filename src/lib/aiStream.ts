@@ -6,7 +6,8 @@ const PLAN_URL = `${SUPABASE_URL}/functions/v1/plan-ai`;
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-  title?: string; // Card title for assistant build messages
+  title?: string;
+  details?: string;
 }
 
 /** Call the conversational AI to understand intent and respond naturally */
