@@ -71,7 +71,7 @@ const Index = () => {
     }
   };
 
-  const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[]) => {
+  const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string) => {
     startLoadingCycle();
     setIsStreaming(true);
 
@@ -109,6 +109,20 @@ const Index = () => {
           setGeneratedHtml(html);
           saveHtmlToProject(html);
         }
+
+        // Add a summary message showing what was done
+        const summaryMsg: ChatMessage = {
+          role: "assistant",
+          title: mode === "update" ? "Wijziging toegepast" : "App gebouwd",
+          content: input,
+          details: planDetails || undefined,
+        };
+        setMessages((prev) => {
+          const updated = [...prev, summaryMsg];
+          saveChatToProject(updated);
+          return updated;
+        });
+
         setIsLoading(false);
         setIsStreaming(false);
         stopLoadingCycle();
@@ -187,16 +201,22 @@ const Index = () => {
   };
 
   const handleApprovePlan = async () => {
+    const currentPlan = plan;
     setPlan(null);
-    const planMsg: ChatMessage = { role: "assistant" as const, content: `Plan goedgekeurd — ik ga aan de slag!`, title: "Plan goedgekeurd" };
+    const planMsg: ChatMessage = { role: "assistant" as const, content: `Plan goedgekeurd — ik ga aan de slag!`, title: "✅ Plan goedgekeurd" };
     const newMsgs = [...messages, planMsg];
     setMessages(newMsgs);
     saveChatToProject(newMsgs);
     setIsLoading(true);
     setLoadingText("Plan uitvoeren...");
 
+    // Build plan details string for the summary
+    const planDetailsText = currentPlan
+      ? currentPlan.steps.map((s, i) => `${i + 1}. ${s.title}\n   ${s.description}`).join("\n")
+      : undefined;
+
     try {
-      await executeBuild(planPrompt, newMsgs);
+      await executeBuild(planPrompt, newMsgs, planDetailsText);
     } catch (e) {
       toast.error("Uitvoering mislukt.");
       setIsLoading(false);

@@ -33,6 +33,12 @@ const AssistantMessage = ({ msg }: { msg: ChatMessage }) => {
       <div className="px-1">
         <div className="whitespace-pre-wrap leading-relaxed text-sm text-foreground">{msg.content}</div>
       </div>
+      {msg.details && (
+        <div className="rounded-xl border border-border bg-muted/50 p-3 space-y-1">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Wat er is gedaan</span>
+          <div className="whitespace-pre-wrap text-xs leading-relaxed text-foreground/80">{msg.details}</div>
+        </div>
+      )}
     </div>
   );
 };
