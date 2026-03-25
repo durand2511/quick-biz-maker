@@ -394,6 +394,7 @@ const Index = () => {
 
         {currentView === "projects" && (
           <AllProjectsView
+            key={currentView}
             onNewProject={handleNewProject}
             onOpenProject={handleOpenProject}
           />
