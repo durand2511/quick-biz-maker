@@ -355,6 +355,11 @@ const Index = () => {
   const handleNewChat = async () => {
     saveCurrentProject();
     resetProjectState();
+
+    // Immediately create a new project so it's linked from the start
+    const newProject = createProject("Nieuw project", "");
+    setCurrentProject(newProject);
+
     setCurrentView("editor");
     await showInitAnimation();
   };
