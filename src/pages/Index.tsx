@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User } from "lucide-react";
+import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User, History, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
@@ -10,6 +10,8 @@ import AppSidebar from "@/components/AppSidebar";
 import AllProjectsView from "@/components/AllProjectsView";
 import PublishPanel from "@/components/PublishPanel";
 import FileManager from "@/components/FileManager";
+import VersionHistory, { type Version } from "@/components/VersionHistory";
+import VisualEditor from "@/components/VisualEditor";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +46,9 @@ const Index = () => {
   const [currentProject, setCurrentProject] = useState<AppProject | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showVisualEditor, setShowVisualEditor] = useState(false);
+  const [versions, setVersions] = useState<Version[]>([]);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
@@ -75,6 +80,7 @@ const Index = () => {
     setPlan(null);
     setPlanPrompt("");
     setShowPublish(false);
+    setVersions([]);
     setSessionId(crypto.randomUUID());
   };
 
@@ -118,6 +124,16 @@ const Index = () => {
       const updated = await updateProject(currentProject.id, { html });
       if (updated) setCurrentProject(updated);
     }
+  };
+
+  const addVersion = (html: string, label: string) => {
+    const v: Version = {
+      id: crypto.randomUUID(),
+      html,
+      label,
+      timestamp: new Date().toISOString(),
+    };
+    setVersions((prev) => [v, ...prev].slice(0, 50)); // Keep last 50 versions
   };
 
   const replaceImagePlaceholders = (html: string, images?: string[]): string => {
@@ -176,6 +192,7 @@ const Index = () => {
           html = replaceImagePlaceholders(html, images);
           setGeneratedHtml(html);
           saveHtmlToProject(html);
+          addVersion(html, mode === "update" ? "Wijziging" : "Eerste versie");
         }
 
         if (planDetails) {
@@ -451,6 +468,14 @@ const Index = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowVisualEditor(true)} disabled={!generatedHtml} title="Visuele editor">
+                  <MousePointer2 className="h-4 w-4 mr-1.5" />
+                  Bewerk
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowHistory(true)} disabled={versions.length === 0} title="Versiegeschiedenis">
+                  <History className="h-4 w-4 mr-1.5" />
+                  Geschiedenis
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowFiles(true)}>
                   <Files className="h-4 w-4 mr-1.5" />
                   Bestanden
@@ -509,6 +534,32 @@ const Index = () => {
               <FileManager
                 projectId={currentProject?.id}
                 onClose={() => setShowFiles(false)}
+              />
+            )}
+
+            {showHistory && (
+              <VersionHistory
+                versions={versions}
+                currentHtml={generatedHtml}
+                onRevert={(v) => {
+                  setGeneratedHtml(v.html);
+                  saveHtmlToProject(v.html);
+                  toast.success("Versie hersteld!");
+                }}
+                onPreview={(html) => setGeneratedHtml(html)}
+                onClose={() => setShowHistory(false)}
+              />
+            )}
+
+            {showVisualEditor && generatedHtml && (
+              <VisualEditor
+                html={generatedHtml}
+                onSave={(newHtml) => {
+                  setGeneratedHtml(newHtml);
+                  saveHtmlToProject(newHtml);
+                  addVersion(newHtml, "Visuele bewerking");
+                }}
+                onClose={() => setShowVisualEditor(false)}
               />
             )}
           </div>
