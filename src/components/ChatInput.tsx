@@ -272,9 +272,13 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
             </div>
 
             <button
-              onClick={handleSubmitWithPlan}
-              disabled={!input.trim() && attachments.length === 0}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-all hover:opacity-80 disabled:opacity-30"
+              onClick={isLoading ? onCancel : handleSubmitWithPlan}
+              disabled={!isLoading && !input.trim() && attachments.length === 0}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all hover:opacity-80 disabled:opacity-30 ${
+                isLoading
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-foreground text-background"
+              }`}
             >
               {isLoading ? (
                 <Square className="h-3.5 w-3.5 fill-current" />
