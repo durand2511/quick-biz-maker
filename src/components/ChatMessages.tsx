@@ -20,13 +20,17 @@ const AnimatedDots = () => {
   return <span className="inline-block w-4">{dots}</span>;
 };
 
-const AssistantMessage = ({ msg }: { msg: ChatMessage }) => {
+const AssistantMessage = ({ msg, isBusy }: { msg: ChatMessage; isBusy?: boolean }) => {
   return (
     <div className="space-y-2 max-w-[90%]">
       {msg.title && (
         <div className="rounded-xl border border-border bg-card p-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+            {isBusy ? (
+              <Loader2 className="h-4 w-4 text-primary shrink-0 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+            )}
             <span className="text-sm font-medium text-foreground">{msg.title}</span>
           </div>
         </div>
