@@ -5,6 +5,7 @@ const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-ai`;
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  title?: string; // Card title for assistant build messages
 }
 
 /** Call the conversational AI to understand intent and respond naturally */
@@ -14,7 +15,7 @@ export async function chatWithAI({
 }: {
   messages: ChatMessage[];
   hasExistingApp: boolean;
-}): Promise<{ message: string; shouldBuild: boolean }> {
+}): Promise<{ message: string; title: string; shouldBuild: boolean }> {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {

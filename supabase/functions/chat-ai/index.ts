@@ -19,9 +19,12 @@ JE GEDRAG:
 
 JE ANTWOORD MOET ALTIJD GELDIG JSON ZIJN in dit formaat:
 {
-  "message": "Je antwoord aan de gebruiker",
+  "title": "Korte samenvatting van de actie (3-6 woorden, bijv. 'Navigatie kleuren aanpassen', 'Contactformulier toevoegen')",
+  "message": "Je antwoord aan de gebruiker (uitleg wat je gaat doen of je vraag)",
   "shouldBuild": true of false
 }
+
+De "title" is een korte, beschrijvende titel van wat er gebeurt/gevraagd wordt. Bij shouldBuild=true beschrijft het de wijziging. Bij shouldBuild=false beschrijft het het onderwerp.
 
 NIETS ANDERS. Alleen dit JSON-object.`;
 
@@ -79,24 +82,24 @@ serve(async (req) => {
 
     // Try to parse JSON from the response
     let message = rawContent;
+    let title = "";
     let shouldBuild = false;
 
     try {
-      // Clean potential markdown code fences
       let cleaned = rawContent.trim();
       if (cleaned.startsWith("```")) {
         cleaned = cleaned.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
       }
       const parsed = JSON.parse(cleaned);
       message = parsed.message || rawContent;
+      title = parsed.title || "";
       shouldBuild = parsed.shouldBuild === true;
     } catch {
-      // If JSON parsing fails, treat as plain text, no build
       message = rawContent;
       shouldBuild = false;
     }
 
-    return new Response(JSON.stringify({ message, shouldBuild }), {
+    return new Response(JSON.stringify({ message, title, shouldBuild }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
