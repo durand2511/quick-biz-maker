@@ -48,14 +48,21 @@ const ChatMessages = ({ messages, isLoading, loadingText }: Props) => {
           {msg.role === "assistant" ? (
             <AssistantMessage msg={msg} />
           ) : (
-            <>
-              <div className="rounded-xl px-3.5 py-2 text-sm max-w-[85%] bg-secondary text-secondary-foreground">
+            <div className="flex flex-col items-end gap-1.5 max-w-[85%]">
+              {msg.images && msg.images.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap justify-end">
+                  {msg.images.map((src, j) => (
+                    <img key={j} src={src} alt="Upload" className="h-16 w-16 rounded-lg object-cover border border-border" />
+                  ))}
+                </div>
+              )}
+              <div className="rounded-xl px-3.5 py-2 text-sm bg-secondary text-secondary-foreground">
                 {msg.content}
               </div>
-              <div className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                <User className="h-3.5 w-3.5 text-secondary-foreground" />
-              </div>
-            </>
+            </div>
+            <div className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+              <User className="h-3.5 w-3.5 text-secondary-foreground" />
+            </div>
           )}
         </div>
       ))}
