@@ -303,6 +303,7 @@ const Index = () => {
     setGeneratedHtml(project.html);
     setMessages(project.chatHistory || []);
     setPlan(null);
+    setPreviewKey(crypto.randomUUID());
     setCurrentView("editor");
   };
 
