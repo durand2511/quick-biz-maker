@@ -223,22 +223,24 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
       <div className="w-full max-w-3xl space-y-2">
         {/* Attachments preview */}
         {attachments.length > 0 && (
-          <div className="flex gap-2 flex-wrap px-1">
+          <div className="flex gap-3 flex-wrap px-1">
             {attachments.map((att, i) => (
-              <div key={i} className="relative group rounded-lg border border-border bg-card overflow-hidden">
-                {att.preview ? (
-                  <img src={att.preview} alt={att.file.name} className="h-16 w-16 object-cover" />
-                ) : (
-                  <div className="h-16 w-16 flex flex-col items-center justify-center gap-1 px-1">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">
-                      {att.file.name.slice(0, 12)}
-                    </span>
-                  </div>
-                )}
+              <div key={i} className="relative group">
+                <div className="rounded-lg border border-border bg-card overflow-hidden">
+                  {att.preview ? (
+                    <img src={att.preview} alt={att.file.name} className="h-16 w-16 object-cover" />
+                  ) : (
+                    <div className="h-16 w-16 flex flex-col items-center justify-center gap-1 px-1">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[9px] text-muted-foreground truncate w-full text-center">
+                        {att.file.name.slice(0, 12)}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => removeAttachment(i)}
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                 >
                   <X className="h-3 w-3" />
                 </button>
