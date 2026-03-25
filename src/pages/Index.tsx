@@ -110,7 +110,7 @@ const Index = () => {
           saveHtmlToProject(html);
         }
 
-        // Only add summary for plan-based builds
+        // Add summary: plan builds get a separate details message, regular builds add details to existing message
         if (planDetails) {
           const summaryMsg: ChatMessage = {
             role: "assistant",
@@ -120,6 +120,20 @@ const Index = () => {
           };
           setMessages((prev) => {
             const updated = [...prev, summaryMsg];
+            saveChatToProject(updated);
+            return updated;
+          });
+        } else {
+          // Regular build: add details text to the last assistant message (under its card)
+          setMessages((prev) => {
+            const updated = [...prev];
+            // Find last assistant message and add the summary as details
+            for (let i = updated.length - 1; i >= 0; i--) {
+              if (updated[i].role === "assistant" && updated[i].title) {
+                updated[i] = { ...updated[i], details: input };
+                break;
+              }
+            }
             saveChatToProject(updated);
             return updated;
           });
