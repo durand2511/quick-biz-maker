@@ -19,6 +19,7 @@ export interface PlanData {
 interface Props {
   onSend: (message: string, attachments?: File[]) => void;
   onRequestPlan: (message: string) => void;
+  onCancel?: () => void;
   isLoading: boolean;
   placeholder?: string;
   plan?: PlanData | null;
@@ -26,7 +27,7 @@ interface Props {
   onRejectPlan?: () => void;
 }
 
-const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onApprovePlan, onRejectPlan }: Props) => {
+const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, plan, onApprovePlan, onRejectPlan }: Props) => {
   const [input, setInput] = useState("");
   const [queued, setQueued] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
