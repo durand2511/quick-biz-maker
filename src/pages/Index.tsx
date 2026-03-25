@@ -358,7 +358,7 @@ const Index = () => {
     setMessages(project.chatHistory || []);
     setPlan(null);
     setPlanPrompt("");
-    setPreviewKey(crypto.randomUUID());
+    setSessionId(crypto.randomUUID());
     setCurrentView("editor");
   };
 
