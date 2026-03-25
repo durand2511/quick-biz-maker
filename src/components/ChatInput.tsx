@@ -32,8 +32,8 @@ const ChatInput = ({ onSend, isLoading, placeholder }: Props) => {
   };
 
   return (
-    <div className="border-t border-border bg-card p-4">
-      <div className="flex items-end gap-3 max-w-3xl mx-auto">
+    <div className="p-4">
+      <div className="flex items-end gap-3 max-w-3xl mx-auto rounded-2xl border border-border bg-card px-4 py-3">
         <textarea
           ref={textareaRef}
           value={input}
@@ -41,7 +41,7 @@ const ChatInput = ({ onSend, isLoading, placeholder }: Props) => {
           onKeyDown={handleKeyDown}
           placeholder={placeholder || "Describe what you want to build..."}
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+          className="flex-1 resize-none bg-transparent text-sm text-foreground focus:outline-none placeholder:text-muted-foreground"
           disabled={isLoading}
         />
         <button
