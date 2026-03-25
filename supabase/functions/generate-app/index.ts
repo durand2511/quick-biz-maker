@@ -26,6 +26,7 @@ RULES:
 - Include proper meta tags for SEO.
 - The page should look like a real, professional website — not a template.
 - Buttons, forms, navigation, downloads and interactive elements must actually work in the browser with front-end JavaScript.
+- If the user uploads an image, embed it directly in the HTML using the base64 data URL provided. Use it as src for <img> tags exactly as given.
 
 FOR BOOKING/RESERVATION APPS:
 - Include a date picker, time slots, and a form with name/email/phone fields.
