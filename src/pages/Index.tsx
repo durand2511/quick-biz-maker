@@ -8,6 +8,7 @@ import WelcomeScreen from "@/components/WelcomeScreen";
 import AppSidebar from "@/components/AppSidebar";
 import AllProjectsView from "@/components/AllProjectsView";
 import PublishPanel from "@/components/PublishPanel";
+import FileManager from "@/components/FileManager";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
 import { useAuth } from "@/contexts/AuthContext";
