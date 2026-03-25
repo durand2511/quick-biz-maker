@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Globe, ChevronDown, Home, FolderOpen } from "lucide-react";
+import { Globe, ChevronDown, Home, FolderOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
@@ -23,10 +23,10 @@ const LOADING_STAGES = [
 ];
 
 const INIT_STAGES = [
-  "Nieuw project aanmaken...",
-  "Werkruimte initialiseren...",
-  "Sessie voorbereiden...",
-  "Klaar",
+  "Starting new session...",
+  "⏳ Initializing environment",
+  "⏳ Resetting state",
+  "⏳ Ready",
 ];
 
 const Index = () => {
@@ -332,6 +332,13 @@ const Index = () => {
     setCurrentView("home");
   };
 
+  const handleNewChat = async () => {
+    saveCurrentProject();
+    resetProjectState();
+    setCurrentView("editor");
+    await showInitAnimation();
+  };
+
   const handleOpenProject = (project: AppProject) => {
     // Save current project before switching
     saveCurrentProject();
@@ -397,8 +404,15 @@ const Index = () => {
                   </button>
                   <div className="absolute top-full left-0 mt-1 w-48 rounded-lg border border-border bg-card shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     <button
-                      onClick={() => setCurrentView("home")}
+                      onClick={handleNewChat}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary rounded-t-lg transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Nieuw project
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("home")}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary transition-colors"
                     >
                       <Home className="h-4 w-4" />
                       Dashboard
