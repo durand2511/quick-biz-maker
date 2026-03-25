@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, Clock, Globe, Trash2, LayoutGrid, List } from "lucide-react";
 import { type AppProject, getProjects, deleteProject } from "@/lib/projects";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { toast } from "sonner";
 
 interface Props {
