@@ -9,10 +9,11 @@ interface Props {
 }
 
 const AllProjectsView = ({ onNewProject, onOpenProject }: Props) => {
-  const [projects, setProjects] = useState<AppProject[]>(getProjects());
+  const [projects, setProjects] = useState<AppProject[]>([]);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
 
+  // Always refresh project list from persistent storage on mount
   useEffect(() => {
     setProjects(getProjects());
   }, []);

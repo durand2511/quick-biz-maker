@@ -58,7 +58,11 @@ const Index = () => {
     }
   };
 
-  /** Completely reset all project state for a fresh start — hard reset */
+  /**
+   * Reset SESSION state only (temporary).
+   * This does NOT touch STORAGE (localStorage projects).
+   * Projects persist independently in localStorage via src/lib/projects.ts.
+   */
   const resetProjectState = () => {
     // Abort any in-flight requests
     abortControllerRef.current?.abort();
@@ -390,6 +394,7 @@ const Index = () => {
 
         {currentView === "projects" && (
           <AllProjectsView
+            key={currentView}
             onNewProject={handleNewProject}
             onOpenProject={handleOpenProject}
           />
