@@ -261,16 +261,20 @@ const Index = () => {
     if (updated) setCurrentProject(updated);
   };
 
+  const showSidebar = currentView !== "editor";
+
   return (
     <div className="flex h-screen bg-background">
-      <AppSidebar
-        onNewProject={handleNewProject}
-        onOpenProject={handleOpenProject}
-        onShowAllProjects={() => setCurrentView("projects")}
-        onGoHome={() => { setCurrentView("home"); }}
-        activeProjectId={currentProject?.id}
-        currentView={currentView}
-      />
+      {showSidebar && (
+        <AppSidebar
+          onNewProject={handleNewProject}
+          onOpenProject={handleOpenProject}
+          onShowAllProjects={() => setCurrentView("projects")}
+          onGoHome={() => { setCurrentView("home"); }}
+          activeProjectId={currentProject?.id}
+          currentView={currentView}
+        />
+      )}
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -289,7 +293,28 @@ const Index = () => {
           <>
             <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold">{currentProject?.name || "Mellow"}</h1>
+                <div className="relative group">
+                  <button className="text-sm font-bold hover:text-muted-foreground transition-colors flex items-center gap-1.5">
+                    {currentProject?.name || "Mellow"}
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </button>
+                  <div className="absolute top-full left-0 mt-1 w-48 rounded-lg border border-border bg-card shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <button
+                      onClick={() => setCurrentView("home")}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary rounded-t-lg transition-colors"
+                    >
+                      <Home className="h-4 w-4" />
+                      Dashboard
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("projects")}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary rounded-b-lg transition-colors"
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                      Alle projecten
+                    </button>
+                  </div>
+                </div>
               </div>
               <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
                 <Globe className="h-4 w-4 mr-1.5" />
