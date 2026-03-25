@@ -169,7 +169,14 @@ const Index = () => {
   };
 
   const handleSend = async (input: string, attachments?: File[]) => {
-    if (currentView !== "editor") setCurrentView("editor");
+    if (currentView !== "editor") {
+      // Starting fresh from home/projects — reset project state
+      setMessages([]);
+      setGeneratedHtml(null);
+      setCurrentProject(null);
+      setPlan(null);
+      setCurrentView("editor");
+    }
 
     // Convert image attachments to base64
     let images: string[] | undefined;
