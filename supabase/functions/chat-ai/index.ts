@@ -28,6 +28,18 @@ De "title" is een korte, beschrijvende titel van wat er gebeurt/gevraagd wordt. 
 
 NIETS ANDERS. Alleen dit JSON-object.`;
 
+// Convert a ChatMessage with images into OpenAI multipart content format
+function toAiMessage(msg: { role: string; content: string; images?: string[] }) {
+  if (msg.images && msg.images.length > 0) {
+    const parts: any[] = [{ type: "text", text: msg.content }];
+    for (const dataUrl of msg.images) {
+      parts.push({ type: "image_url", image_url: { url: dataUrl } });
+    }
+    return { role: msg.role, content: parts };
+  }
+  return { role: msg.role, content: msg.content };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -44,7 +56,7 @@ serve(async (req) => {
 
     const aiMessages = [
       { role: "system", content: SYSTEM_PROMPT + contextNote },
-      ...messages,
+      ...messages.map(toAiMessage),
     ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
