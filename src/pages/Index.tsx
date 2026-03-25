@@ -536,6 +536,32 @@ const Index = () => {
                 onClose={() => setShowFiles(false)}
               />
             )}
+
+            {showHistory && (
+              <VersionHistory
+                versions={versions}
+                currentHtml={generatedHtml}
+                onRevert={(v) => {
+                  setGeneratedHtml(v.html);
+                  saveHtmlToProject(v.html);
+                  toast.success("Versie hersteld!");
+                }}
+                onPreview={(html) => setGeneratedHtml(html)}
+                onClose={() => setShowHistory(false)}
+              />
+            )}
+
+            {showVisualEditor && generatedHtml && (
+              <VisualEditor
+                html={generatedHtml}
+                onSave={(newHtml) => {
+                  setGeneratedHtml(newHtml);
+                  saveHtmlToProject(newHtml);
+                  addVersion(newHtml, "Visuele bewerking");
+                }}
+                onClose={() => setShowVisualEditor(false)}
+              />
+            )}
           </div>
         )}
       </div>
