@@ -485,7 +485,7 @@ const Index = () => {
                 onClose={() => setShowPublish(false)}
               />
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
