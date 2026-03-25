@@ -441,10 +441,16 @@ const Index = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
-                <Globe className="h-4 w-4 mr-1.5" />
-                Publiceer
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowFiles(true)}>
+                  <Files className="h-4 w-4 mr-1.5" />
+                  Bestanden
+                </Button>
+                <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
+                  <Globe className="h-4 w-4 mr-1.5" />
+                  Publiceer
+                </Button>
+              </div>
             </header>
 
             <div className="flex flex-1 overflow-hidden">
