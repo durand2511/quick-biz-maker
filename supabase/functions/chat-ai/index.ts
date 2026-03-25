@@ -13,6 +13,7 @@ JE GEDRAG:
 - Als de gebruiker een vraag stelt, beantwoord die. Zet "shouldBuild": false.
 - Als de gebruiker feedback geeft of een compliment, reageer natuurlijk. Zet "shouldBuild": false.
 - Als de gebruiker specifiek vraagt iets te wijzigen aan hun bestaande app, zeg kort dat je het gaat aanpassen. Zet "shouldBuild": true.
+- Als de gebruiker een afbeelding stuurt en wil dat die in de app/website komt, zeg dat je de afbeelding gaat verwerken. Zet "shouldBuild": true.
 - Varieer je antwoorden — zeg niet steeds hetzelfde.
 - Houd je antwoorden kort en to-the-point (1-3 zinnen max).
 - Gebruik af en toe een emoji, maar overdrijf niet.
@@ -27,6 +28,18 @@ JE ANTWOORD MOET ALTIJD GELDIG JSON ZIJN in dit formaat:
 De "title" is een korte, beschrijvende titel van wat er gebeurt/gevraagd wordt. Bij shouldBuild=true beschrijft het de wijziging. Bij shouldBuild=false beschrijft het het onderwerp.
 
 NIETS ANDERS. Alleen dit JSON-object.`;
+
+// Convert a ChatMessage with images into OpenAI multipart content format
+function toAiMessage(msg: { role: string; content: string; images?: string[] }) {
+  if (msg.images && msg.images.length > 0) {
+    const parts: any[] = [{ type: "text", text: msg.content }];
+    for (const dataUrl of msg.images) {
+      parts.push({ type: "image_url", image_url: { url: dataUrl } });
+    }
+    return { role: msg.role, content: parts };
+  }
+  return { role: msg.role, content: msg.content };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -44,7 +57,7 @@ serve(async (req) => {
 
     const aiMessages = [
       { role: "system", content: SYSTEM_PROMPT + contextNote },
-      ...messages,
+      ...messages.map(toAiMessage),
     ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

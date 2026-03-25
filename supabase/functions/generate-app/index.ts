@@ -26,6 +26,7 @@ RULES:
 - Include proper meta tags for SEO.
 - The page should look like a real, professional website — not a template.
 - Buttons, forms, navigation, downloads and interactive elements must actually work in the browser with front-end JavaScript.
+- If the user uploads an image, embed it directly in the HTML using the base64 data URL provided. Use it as src for <img> tags exactly as given.
 
 FOR BOOKING/RESERVATION APPS:
 - Include a date picker, time slots, and a form with name/email/phone fields.
@@ -54,10 +55,23 @@ CRITICAL RULES:
 - If the user asks to REMOVE something, remove ONLY that specific element/section.
 - If the user asks to FIX something, fix ONLY the broken part.
 - All text content should be in Dutch (Netherlands).
+- If the user uploads an image, embed it directly in the HTML using the base64 data URL provided. Use it as src for <img> tags exactly as given.
 
 THINK OF IT AS A DIFF: What is the smallest possible change to the existing code that satisfies the user's request? Make exactly that change and nothing more.
 
 IMPORTANT: Your entire response must be ONLY valid HTML starting with <!DOCTYPE html>. Nothing else.`;
+
+// Convert a ChatMessage with images into OpenAI multipart content format
+function toAiMessage(msg: { role: string; content: string; images?: string[] }) {
+  if (msg.images && msg.images.length > 0) {
+    const parts: any[] = [{ type: "text", text: msg.content }];
+    for (const dataUrl of msg.images) {
+      parts.push({ type: "image_url", image_url: { url: dataUrl } });
+    }
+    return { role: msg.role, content: parts };
+  }
+  return { role: msg.role, content: msg.content };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -70,7 +84,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const isUpdate = !!currentHtml;
-    const aiMessages: Array<{ role: string; content: string }> = [
+    const aiMessages: any[] = [
       { role: "system", content: isUpdate ? UPDATE_SYSTEM_PROMPT : CREATE_SYSTEM_PROMPT },
     ];
 
@@ -86,7 +100,7 @@ serve(async (req) => {
     }
 
     for (const msg of messages) {
-      aiMessages.push({ role: msg.role, content: msg.content });
+      aiMessages.push(toAiMessage(msg));
     }
 
     // Use faster model for updates, full model for new apps

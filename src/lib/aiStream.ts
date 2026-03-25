@@ -8,6 +8,7 @@ export interface ChatMessage {
   content: string;
   title?: string;
   details?: string;
+  images?: string[]; // base64 data URLs
 }
 
 /** Call the conversational AI to understand intent and respond naturally */
