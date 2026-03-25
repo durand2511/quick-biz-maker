@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Globe, ChevronDown, Home, FolderOpen, Plus } from "lucide-react";
+import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
@@ -10,6 +10,7 @@ import AllProjectsView from "@/components/AllProjectsView";
 import PublishPanel from "@/components/PublishPanel";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 type ViewState = "home" | "editor" | "projects";
@@ -30,6 +31,7 @@ const INIT_STAGES = [
 ];
 
 const Index = () => {
+  const { user, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,41 +50,30 @@ const Index = () => {
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  /** Save current project state before switching away */
-  const saveCurrentProject = () => {
+  const saveCurrentProject = async () => {
     if (currentProject) {
-      updateProject(currentProject.id, {
+      await updateProject(currentProject.id, {
         chatHistory: messages,
         html: generatedHtml || currentProject.html,
       });
     }
   };
 
-  /**
-   * Reset SESSION state only (temporary).
-   * This does NOT touch STORAGE (localStorage projects).
-   * Projects persist independently in localStorage via src/lib/projects.ts.
-   */
   const resetProjectState = () => {
-    // Abort any in-flight requests
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
-    // Stop loading cycles
     setIsLoading(false);
     setIsStreaming(false);
     stopLoadingCycle();
-    // Clear all state
     setMessages([]);
     setGeneratedHtml(null);
     setCurrentProject(null);
     setPlan(null);
     setPlanPrompt("");
     setShowPublish(false);
-    // New session ID forces full remount of editor components
     setSessionId(crypto.randomUUID());
   };
 
-  /** Show initialization animation */
   const showInitAnimation = async () => {
     setIsInitializing(true);
     for (const stage of INIT_STAGES) {
@@ -118,14 +109,13 @@ const Index = () => {
     }
   };
 
-  const saveHtmlToProject = (html: string) => {
+  const saveHtmlToProject = async (html: string) => {
     if (currentProject) {
-      const updated = updateProject(currentProject.id, { html });
+      const updated = await updateProject(currentProject.id, { html });
       if (updated) setCurrentProject(updated);
     }
   };
 
-  // Replace image placeholders like {{USER_IMAGE_1}} with actual base64 data URLs
   const replaceImagePlaceholders = (html: string, images?: string[]): string => {
     if (!images || images.length === 0) return html;
     let result = html;
@@ -147,7 +137,6 @@ const Index = () => {
       ? `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}`
       : input;
     const userMsg: ChatMessage = { role: "user", content: userContent, ...(images && { images }) };
-    // Send full conversation history so generate-app has full context
     const conversationForAi: ChatMessage[] = [
       ...msgsBeforeBuild
         .filter(m => m.role === "user")
@@ -223,20 +212,17 @@ const Index = () => {
 
   const handleSend = async (input: string, attachments?: File[]) => {
     if (currentView !== "editor") {
-      // Save current project before starting fresh
-      saveCurrentProject();
+      await saveCurrentProject();
       resetProjectState();
       setCurrentView("editor");
       await showInitAnimation();
     }
 
-    // Ensure a project exists before any AI work
-    if (!currentProject) {
-      const newProject = createProject("Nieuw project", "");
-      setCurrentProject(newProject);
+    if (!currentProject && user) {
+      const newProject = await createProject("Nieuw project", "", user.id);
+      if (newProject) setCurrentProject(newProject);
     }
 
-    // Convert image attachments to base64
     let images: string[] | undefined;
     if (attachments && attachments.length > 0) {
       const imageFiles = attachments.filter(f => f.type.startsWith("image/"));
@@ -295,10 +281,7 @@ const Index = () => {
         currentHtml: generatedHtml,
       });
 
-      setPlan({
-        summary: planResult.summary,
-        steps: planResult.steps,
-      });
+      setPlan({ summary: planResult.summary, steps: planResult.steps });
       setIsLoading(false);
     } catch (e) {
       toast.error("Plan maken mislukt.");
@@ -312,7 +295,6 @@ const Index = () => {
     setIsLoading(true);
     setLoadingText("Plan uitvoeren...");
 
-    // Build plan details string for the summary
     const planDetailsText = currentPlan
       ? currentPlan.steps.map((s, i) => `${i + 1}. ${s.title}\n   ${s.description}`).join("\n")
       : undefined;
@@ -350,24 +332,21 @@ const Index = () => {
   };
 
   const handleNewChat = async () => {
-    saveCurrentProject();
+    await saveCurrentProject();
     resetProjectState();
-
-    // Ensure preview is fully cleared before new project
     setGeneratedHtml(null);
 
-    // Immediately create a new project so it's linked from the start
-    const newProject = createProject("Nieuw project", "");
-    setCurrentProject(newProject);
+    if (user) {
+      const newProject = await createProject("Nieuw project", "", user.id);
+      if (newProject) setCurrentProject(newProject);
+    }
 
     setCurrentView("editor");
     await showInitAnimation();
   };
 
   const handleOpenProject = (project: AppProject) => {
-    // Save current project before switching
     saveCurrentProject();
-    // Load selected project's isolated state
     setCurrentProject(project);
     setGeneratedHtml(project.html);
     setMessages(project.chatHistory || []);
@@ -377,9 +356,9 @@ const Index = () => {
     setCurrentView("editor");
   };
 
-  const handleProjectUpdate = (updates: Partial<AppProject>) => {
+  const handleProjectUpdate = async (updates: Partial<AppProject>) => {
     if (!currentProject) return;
-    const updated = updateProject(currentProject.id, updates);
+    const updated = await updateProject(currentProject.id, updates);
     if (updated) setCurrentProject(updated);
   };
 
@@ -445,10 +424,17 @@ const Index = () => {
                     </button>
                     <button
                       onClick={() => setCurrentView("projects")}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary rounded-b-lg transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary transition-colors"
                     >
                       <FolderOpen className="h-4 w-4" />
                       Alle projecten
+                    </button>
+                    <button
+                      onClick={signOut}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-destructive hover:bg-secondary rounded-b-lg transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Uitloggen
                     </button>
                   </div>
                 </div>
