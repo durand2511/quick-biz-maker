@@ -434,6 +434,13 @@ const Index = () => {
                       Alle projecten
                     </button>
                     <button
+                      onClick={() => navigate("/profile")}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <User className="h-4 w-4" />
+                      Profiel
+                    </button>
+                    <button
                       onClick={signOut}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-destructive hover:bg-secondary rounded-b-lg transition-colors"
                     >
