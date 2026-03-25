@@ -1,10 +1,38 @@
-const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-app`;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const GENERATE_URL = `${SUPABASE_URL}/functions/v1/generate-app`;
+const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-ai`;
 
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
 
+/** Call the conversational AI to understand intent and respond naturally */
+export async function chatWithAI({
+  messages,
+  hasExistingApp,
+}: {
+  messages: ChatMessage[];
+  hasExistingApp: boolean;
+}): Promise<{ message: string; shouldBuild: boolean }> {
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ messages, hasExistingApp }),
+  });
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({ error: "Chat failed" }));
+    throw new Error(data.error || `Error ${resp.status}`);
+  }
+
+  return resp.json();
+}
+
+/** Stream HTML generation from the AI */
 export async function streamGenerateApp({
   messages,
   currentHtml,
@@ -18,7 +46,7 @@ export async function streamGenerateApp({
   onDone: () => void;
   onError: (error: string) => void;
 }) {
-  const resp = await fetch(FUNCTION_URL, {
+  const resp = await fetch(GENERATE_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -73,7 +101,6 @@ export async function streamGenerateApp({
     }
   }
 
-  // Flush remaining
   if (buffer.trim()) {
     for (let raw of buffer.split("\n")) {
       if (!raw) continue;
