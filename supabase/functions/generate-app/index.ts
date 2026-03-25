@@ -69,14 +69,19 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    const isUpdate = !!currentHtml;
     const aiMessages: Array<{ role: string; content: string }> = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: isUpdate ? UPDATE_SYSTEM_PROMPT : CREATE_SYSTEM_PROMPT },
     ];
 
-    if (currentHtml) {
+    if (isUpdate) {
       aiMessages.push({
-        role: "system",
-        content: `The user's current app HTML is:\n\n${currentHtml}\n\nApply ONLY the user's requested changes to this HTML. Keep everything else exactly the same. Return the complete updated HTML. Prioritize speed — change as little as necessary.`,
+        role: "user",
+        content: `Here is my current app code:\n\n${currentHtml}`,
+      });
+      aiMessages.push({
+        role: "assistant",
+        content: "I have your current app memorized. Tell me what to change and I will make only that change.",
       });
     }
 
