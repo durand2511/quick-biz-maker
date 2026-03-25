@@ -139,10 +139,28 @@ const Index = () => {
     });
   };
 
-  const handleSend = async (input: string) => {
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSend = async (input: string, attachments?: File[]) => {
     if (currentView !== "editor") setCurrentView("editor");
 
-    const userMsg: ChatMessage = { role: "user", content: input };
+    // Convert image attachments to base64
+    let images: string[] | undefined;
+    if (attachments && attachments.length > 0) {
+      const imageFiles = attachments.filter(f => f.type.startsWith("image/"));
+      if (imageFiles.length > 0) {
+        images = await Promise.all(imageFiles.map(fileToBase64));
+      }
+    }
+
+    const userMsg: ChatMessage = { role: "user", content: input, ...(images && { images }) };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setIsLoading(true);
@@ -166,7 +184,7 @@ const Index = () => {
       setMessages(msgsWithResponse);
       saveChatToProject(msgsWithResponse);
 
-      await executeBuild(input, msgsWithResponse);
+      await executeBuild(input, msgsWithResponse, undefined, images);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Er ging iets mis. Probeer het opnieuw.");
       setIsLoading(false);
