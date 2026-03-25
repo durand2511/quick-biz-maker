@@ -23,9 +23,9 @@ const LOADING_STAGES = [
 ];
 
 const INIT_STAGES = [
-  "Starting new session...",
-  "⏳ Initializing environment",
-  "⏳ Resetting state",
+  "Starting fresh session...",
+  "⏳ Clearing previous data",
+  "⏳ Creating new environment",
   "⏳ Ready",
 ];
 
@@ -40,7 +40,7 @@ const Index = () => {
   const [showPublish, setShowPublish] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
-  const [previewKey, setPreviewKey] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [isInitializing, setIsInitializing] = useState(false);
   const [initText, setInitText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -58,14 +58,24 @@ const Index = () => {
     }
   };
 
-  /** Completely reset all project state for a fresh start */
+  /** Completely reset all project state for a fresh start — hard reset */
   const resetProjectState = () => {
+    // Abort any in-flight requests
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    // Stop loading cycles
+    setIsLoading(false);
+    setIsStreaming(false);
+    stopLoadingCycle();
+    // Clear all state
     setMessages([]);
     setGeneratedHtml(null);
     setCurrentProject(null);
     setPlan(null);
     setPlanPrompt("");
-    setPreviewKey(crypto.randomUUID());
+    setShowPublish(false);
+    // New session ID forces full remount of editor components
+    setSessionId(crypto.randomUUID());
   };
 
   /** Show initialization animation */
@@ -348,7 +358,7 @@ const Index = () => {
     setMessages(project.chatHistory || []);
     setPlan(null);
     setPlanPrompt("");
-    setPreviewKey(crypto.randomUUID());
+    setSessionId(crypto.randomUUID());
     setCurrentView("editor");
   };
 
@@ -386,7 +396,7 @@ const Index = () => {
         )}
 
         {currentView === "editor" && (
-          <>
+          <div key={sessionId} className="flex flex-col flex-1 min-h-0">
             {isInitializing && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm">
                 <div className="flex flex-col items-center gap-3">
@@ -464,7 +474,7 @@ const Index = () => {
                   </>
                 )}
               </div>
-              <LivePreview key={previewKey} html={generatedHtml} isStreaming={isStreaming} />
+              <LivePreview html={generatedHtml} isStreaming={isStreaming} />
             </div>
 
             {showPublish && currentProject && (
@@ -475,7 +485,7 @@ const Index = () => {
                 onClose={() => setShowPublish(false)}
               />
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
