@@ -404,8 +404,15 @@ const Index = () => {
                   </button>
                   <div className="absolute top-full left-0 mt-1 w-48 rounded-lg border border-border bg-card shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     <button
-                      onClick={() => setCurrentView("home")}
+                      onClick={handleNewChat}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary rounded-t-lg transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Nieuw project
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("home")}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary transition-colors"
                     >
                       <Home className="h-4 w-4" />
                       Dashboard
