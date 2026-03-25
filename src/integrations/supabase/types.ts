@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_data: {
+        Row: {
+          collection: string
+          created_at: string
+          data: Json
+          id: string
+        }
+        Insert: {
+          collection?: string
+          created_at?: string
+          data?: Json
+          id?: string
+        }
+        Update: {
+          collection?: string
+          created_at?: string
+          data?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

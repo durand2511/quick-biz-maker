@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
 const CREATE_SYSTEM_PROMPT = `You are an expert web app generator. Given a user's description, you generate a complete, self-contained HTML page with inline CSS and FULLY FUNCTIONAL JavaScript.
 
 RULES:
@@ -22,7 +25,7 @@ RULES:
 - All text content should be in Dutch (Netherlands).
 - Include proper meta tags for SEO.
 - The page should look like a real, professional website — not a template.
-- If the user mentions uploading an image, use the placeholder exactly as provided (e.g. {{USER_IMAGE_1}}, {{USER_IMAGE_2}}) as the src attribute for <img> tags. The placeholder will be replaced with the actual image data automatically. Example: <img src="{{USER_IMAGE_1}}" alt="Logo" class="h-12" />
+- If the user mentions uploading an image, use the placeholder exactly as provided (e.g. {{USER_IMAGE_1}}, {{USER_IMAGE_2}}) as the src attribute for <img> tags.
 
 CRITICAL — FUNCTIONALITY RULES (MUST FOLLOW):
 - Every button MUST have a working onclick handler or event listener.
@@ -38,29 +41,128 @@ REQUIRED INTERACTIVE PATTERNS:
 - Tabs/Accordions: Toggle content visibility. Update active state styling.
 - Counters/Quantities: Increment/decrement buttons that update displayed values.
 
+========================================
+ADVANCED CAPABILITIES — USE WHEN REQUESTED
+========================================
+
+When the user asks for AI, chatbot, database, data storage, or similar advanced features, you MUST use the following real APIs. These are REAL working endpoints — NOT mock/fake.
+
+--- AI CHATBOT ---
+When user asks for a chatbot, AI assistant, or any AI-powered feature, include this working code:
+
+<script>
+const MELLOW_API = '${SUPABASE_URL}/functions/v1/app-ai-proxy';
+const MELLOW_KEY = '${SUPABASE_ANON_KEY}';
+
+async function mellowAI(messages, systemPrompt) {
+  const resp = await fetch(MELLOW_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + MELLOW_KEY,
+    },
+    body: JSON.stringify({ messages, systemPrompt }),
+  });
+  if (!resp.ok) throw new Error('AI-fout');
+  
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let result = '';
+  
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    for (const line of chunk.split('\\n')) {
+      if (!line.startsWith('data: ')) continue;
+      const json = line.slice(6).trim();
+      if (json === '[DONE]') break;
+      try {
+        const parsed = JSON.parse(json);
+        const content = parsed.choices?.[0]?.delta?.content;
+        if (content) result += content;
+      } catch {}
+    }
+  }
+  return result;
+}
+</script>
+
+Use mellowAI() for any AI feature: chatbots, text generation, summarization, translation, etc.
+Create a full chat UI with message history, typing indicator, and styled message bubbles.
+
+--- DATABASE / DATA STORAGE ---
+When user asks for data storage, forms that save data, todo lists, guestbooks, reviews, etc:
+
+<script>
+const MELLOW_DATA = '${SUPABASE_URL}/functions/v1/app-data-api';
+const MELLOW_KEY_DATA = '${SUPABASE_ANON_KEY}';
+
+async function mellowData(action, collection, data, filters) {
+  const resp = await fetch(MELLOW_DATA, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + MELLOW_KEY_DATA,
+    },
+    body: JSON.stringify({ action, collection, data, filters }),
+  });
+  return resp.json();
+}
+
+// Examples:
+// Save: mellowData('insert', 'reviews', { name: 'Jan', text: 'Top!' })
+// Load: mellowData('select', 'reviews')
+// Delete: mellowData('delete', null, null, { id: 'uuid' })
+// Update: mellowData('update', null, { name: 'Updated' }, { id: 'uuid' })
+</script>
+
+Use mellowData() for ANY data persistence: contact forms, reviews, bookings, todo lists, guestbooks, inventory, etc.
+Always load existing data on page load and display it. Show real-time updates.
+
+--- PAYMENTS (STRIPE-STYLE) ---
+When user asks for payments, checkout, or e-commerce with payments:
+- Create a professional checkout form UI with card input fields (styled, not real Stripe)
+- Show order summary, total, and a "Betalen" button
+- On submit, simulate payment processing with a loading state, then show success
+- Include a note: "Dit is een demo-betaalpagina. Voor echte betalingen wordt een betaalkoppeling ingesteld."
+- Save the order via mellowData() so it persists
+
+--- AUTHENTICATION ---
+When user asks for login, user accounts, or authentication:
+- Create a styled login/register form
+- Use mellowData() to store user accounts in a 'users' collection
+- On register: hash password client-side (use a simple hash for demo), save to mellowData
+- On login: check credentials against stored data
+- Use localStorage to maintain session
+- Show different content for logged-in vs logged-out users
+- Include logout functionality
+
+========================================
+
 FOR BOOKING/RESERVATION APPS:
-- Include a working date picker (HTML date input or custom), time slot selection (clickable buttons that highlight when selected), and a form with name/email/phone fields.
+- Include a working date picker, time slot selection, and a form with name/email/phone fields.
 - All inputs must be validated before submission.
-- Show a styled confirmation modal/message with the booking details after submission.
-- Allow the user to dismiss the confirmation and make another booking.
+- Show a styled confirmation modal with booking details after submission.
+- Save bookings via mellowData() so they persist.
+- Load and display existing bookings.
 
 FOR CONTACT FORMS:
 - Include name, email, phone, subject, and message fields.
-- Validate all required fields (show inline error messages for empty/invalid fields).
-- Show a styled success notification after successful submission.
-- Reset form fields after successful submission.
+- Validate all required fields.
+- Save submissions via mellowData().
+- Show a styled success notification after submission.
 
 FOR E-COMMERCE / PRODUCT PAGES:
-- Add to cart button must update a cart counter.
-- Quantity selectors must work.
-- Show cart summary when clicking cart icon.
+- Add to cart with working cart counter.
+- Quantity selectors. Cart summary.
+- Save orders via mellowData().
 
 FOR PORTFOLIO / GALLERY:
-- Clicking images must open a lightbox/modal with larger view.
-- Include navigation between images in the lightbox.
-- Filter/category buttons must filter displayed items.
+- Lightbox/modal for images.
+- Filter/category buttons.
 
-GENERAL INTERACTIVITY TEMPLATE — add this pattern for ALL forms:
+GENERAL INTERACTIVITY TEMPLATE — add this pattern for ALL apps:
 \`\`\`
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -89,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
       e.preventDefault();
       const formData = new FormData(this);
       let isValid = true;
-      // Validate required fields
       this.querySelectorAll('[required]').forEach(input => {
         if (!input.value.trim()) {
           isValid = false;
@@ -99,7 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       if (isValid) {
-        // Show success message
         const successDiv = document.createElement('div');
         successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
         successDiv.textContent = 'Succesvol verstuurd!';
