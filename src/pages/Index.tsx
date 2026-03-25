@@ -353,6 +353,9 @@ const Index = () => {
     saveCurrentProject();
     resetProjectState();
 
+    // Ensure preview is fully cleared before new project
+    setGeneratedHtml(null);
+
     // Immediately create a new project so it's linked from the start
     const newProject = createProject("Nieuw project", "");
     setCurrentProject(newProject);
