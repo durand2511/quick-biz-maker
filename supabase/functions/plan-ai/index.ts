@@ -43,7 +43,8 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT + contextNote },
-          { role: "user", content: `Maak een plan voor het volgende verzoek: ${prompt}` },
+          ...(currentHtml ? [{ role: "user" as const, content: `Dit is de huidige HTML van de app:\n\`\`\`html\n${currentHtml.slice(0, 3000)}\n\`\`\`` }] : []),
+          { role: "user", content: `Analyseer dit en maak een plan: ${prompt}` },
         ],
         tools: [
           {
