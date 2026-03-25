@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
