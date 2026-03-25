@@ -192,6 +192,7 @@ const Index = () => {
           html = replaceImagePlaceholders(html, images);
           setGeneratedHtml(html);
           saveHtmlToProject(html);
+          addVersion(html, mode === "update" ? "Wijziging" : "Eerste versie");
         }
 
         if (planDetails) {
