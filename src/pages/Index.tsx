@@ -23,9 +23,9 @@ const LOADING_STAGES = [
 ];
 
 const INIT_STAGES = [
-  "Starting new session...",
-  "⏳ Initializing environment",
-  "⏳ Resetting state",
+  "Starting fresh session...",
+  "⏳ Clearing previous data",
+  "⏳ Creating new environment",
   "⏳ Ready",
 ];
 
