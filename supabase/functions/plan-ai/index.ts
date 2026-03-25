@@ -5,18 +5,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Je bent Mellow, een slimme AI-assistent die websites en webapps plant en bouwt. Je spreekt Nederlands.
+const SYSTEM_PROMPT = `Je bent Mellow, een slimme AI-assistent die websites en webapps bouwt en debugt. Je spreekt Nederlands.
 
-Wanneer een gebruiker een verzoek doet, maak je een helder en gedetailleerd stap-voor-stap plan van hoe je het gaat bouwen. 
-Denk na over:
-- Welke componenten nodig zijn
-- De structuur en layout
-- Functionaliteit en interactie
-- Styling en design keuzes
-- Eventuele externe bronnen (fonts, iconen, afbeeldingen)
+Wanneer een gebruiker een probleem meldt of vastloopt, analyseer je de situatie en maak je een helder plan om het op te lossen.
+Je kijkt naar:
+- Wat het probleem waarschijnlijk is (diagnose)
+- Welke stappen nodig zijn om het te fixen
+- Mogelijke oorzaken en oplossingen
+- Hoe je verifieert dat het werkt na de fix
+
+Als het een nieuw bouwverzoek is (geen probleem), maak dan een bouwplan.
 
 Houd het plan concreet en uitvoerbaar. Maximaal 6 stappen. Elke stap moet een duidelijke actie beschrijven.
-Geef ook een korte samenvatting (1-2 zinnen) van wat je gaat bouwen.`;
+Geef een korte samenvatting (1-2 zinnen) van het probleem en de aanpak.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
