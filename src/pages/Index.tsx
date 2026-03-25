@@ -23,10 +23,10 @@ const LOADING_STAGES = [
 ];
 
 const INIT_STAGES = [
-  "Nieuw project aanmaken...",
-  "Werkruimte initialiseren...",
-  "Sessie voorbereiden...",
-  "Klaar",
+  "Starting new session...",
+  "⏳ Initializing environment",
+  "⏳ Resetting state",
+  "⏳ Ready",
 ];
 
 const Index = () => {
