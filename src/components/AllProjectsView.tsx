@@ -3,7 +3,6 @@ import { Plus, Search, Clock, Globe, Trash2, LayoutGrid, List } from "lucide-rea
 import { type AppProject, getProjects, deleteProject } from "@/lib/projects";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { toast } from "sonner";
 
 interface Props {
   onNewProject: () => void;
