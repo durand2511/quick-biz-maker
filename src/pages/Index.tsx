@@ -72,6 +72,16 @@ const Index = () => {
     }
   };
 
+  // Replace image placeholders like {{USER_IMAGE_1}} with actual base64 data URLs
+  const replaceImagePlaceholders = (html: string, images?: string[]): string => {
+    if (!images || images.length === 0) return html;
+    let result = html;
+    images.forEach((dataUrl, i) => {
+      result = result.replaceAll(`{{USER_IMAGE_${i + 1}}}`, dataUrl);
+    });
+    return result;
+  };
+
   const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string, images?: string[]) => {
     startLoadingCycle();
     setIsStreaming(true);
@@ -98,7 +108,7 @@ const Index = () => {
           if (partial.includes("<body") && partial.length > 500) {
             let previewHtml = partial;
             if (!previewHtml.includes("</body>")) previewHtml += "\n</body></html>";
-            setGeneratedHtml(previewHtml);
+            setGeneratedHtml(replaceImagePlaceholders(previewHtml, images));
           }
           lastPreviewUpdate = now;
         }
@@ -108,11 +118,11 @@ const Index = () => {
         if (html.includes("```html")) html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "");
         html = html.trim();
         if (html.includes("<!DOCTYPE") || html.includes("<html")) {
+          html = replaceImagePlaceholders(html, images);
           setGeneratedHtml(html);
           saveHtmlToProject(html);
         }
 
-        // Add summary: plan builds get a separate details message, regular builds add details to existing message
         if (planDetails) {
           const summaryMsg: ChatMessage = {
             role: "assistant",
