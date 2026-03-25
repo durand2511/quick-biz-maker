@@ -71,7 +71,7 @@ const Index = () => {
     }
   };
 
-  const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[]) => {
+  const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string) => {
     startLoadingCycle();
     setIsStreaming(true);
 
@@ -109,6 +109,20 @@ const Index = () => {
           setGeneratedHtml(html);
           saveHtmlToProject(html);
         }
+
+        // Add a summary message showing what was done
+        const summaryMsg: ChatMessage = {
+          role: "assistant",
+          title: mode === "update" ? "Wijziging toegepast" : "App gebouwd",
+          content: input,
+          details: planDetails || undefined,
+        };
+        setMessages((prev) => {
+          const updated = [...prev, summaryMsg];
+          saveChatToProject(updated);
+          return updated;
+        });
+
         setIsLoading(false);
         setIsStreaming(false);
         stopLoadingCycle();
