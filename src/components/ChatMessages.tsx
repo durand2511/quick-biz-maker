@@ -21,24 +21,18 @@ const AnimatedDots = () => {
 
 const AssistantMessage = ({ msg }: { msg: ChatMessage }) => {
   return (
-    <div className="space-y-2 max-w-[90%]">
+    <div className="space-y-1 max-w-[90%]">
       {msg.title && (
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-sm font-medium text-foreground">{msg.title}</span>
-          </div>
+        <div className="px-1">
+          <span className="text-xs font-medium text-muted-foreground">{msg.title}</span>
         </div>
       )}
       <div className="px-1">
         <div className="whitespace-pre-wrap leading-relaxed text-sm text-foreground">{msg.content}</div>
+        {msg.details && (
+          <div className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground mt-1">{msg.details}</div>
+        )}
       </div>
-      {msg.details && (
-        <div className="rounded-xl border border-border bg-muted/50 p-3 space-y-1">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Wat er is gedaan</span>
-          <div className="whitespace-pre-wrap text-xs leading-relaxed text-foreground/80">{msg.details}</div>
-        </div>
-      )}
     </div>
   );
 };
