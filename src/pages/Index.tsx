@@ -244,7 +244,16 @@ const Index = () => {
     setMessages((prev) => [...prev, rejectMsg]);
   };
 
-  const handleNewProject = () => {
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsLoading(false);
+    setIsStreaming(false);
+    stopLoadingCycle();
+    const cancelMsg: ChatMessage = { role: "assistant" as const, content: "Afgebroken.", title: "Gestopt" };
+    setMessages((prev) => [...prev, cancelMsg]);
+  };
+
     setMessages([]);
     setGeneratedHtml(null);
     setCurrentProject(null);
