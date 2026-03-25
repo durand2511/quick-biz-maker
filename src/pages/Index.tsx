@@ -80,6 +80,7 @@ const Index = () => {
     setPlan(null);
     setPlanPrompt("");
     setShowPublish(false);
+    setVersions([]);
     setSessionId(crypto.randomUUID());
   };
 
