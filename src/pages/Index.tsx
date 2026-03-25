@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut } from "lucide-react";
+import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
@@ -8,6 +8,7 @@ import WelcomeScreen from "@/components/WelcomeScreen";
 import AppSidebar from "@/components/AppSidebar";
 import AllProjectsView from "@/components/AllProjectsView";
 import PublishPanel from "@/components/PublishPanel";
+import FileManager from "@/components/FileManager";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ const Index = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentProject, setCurrentProject] = useState<AppProject | null>(null);
   const [showPublish, setShowPublish] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
@@ -439,10 +441,16 @@ const Index = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
-                <Globe className="h-4 w-4 mr-1.5" />
-                Publiceer
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowFiles(true)}>
+                  <Files className="h-4 w-4 mr-1.5" />
+                  Bestanden
+                </Button>
+                <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
+                  <Globe className="h-4 w-4 mr-1.5" />
+                  Publiceer
+                </Button>
+              </div>
             </header>
 
             <div className="flex flex-1 overflow-hidden">
@@ -485,6 +493,13 @@ const Index = () => {
                 html={generatedHtml || ""}
                 onUpdate={handleProjectUpdate}
                 onClose={() => setShowPublish(false)}
+              />
+            )}
+
+            {showFiles && (
+              <FileManager
+                projectId={currentProject?.id}
+                onClose={() => setShowFiles(false)}
               />
             )}
           </div>
