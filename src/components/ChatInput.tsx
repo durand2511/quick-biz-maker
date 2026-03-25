@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Square, Paperclip, X, FileText, Mic, MicOff, Lightbulb, Loader2 } from "lucide-react";
+import { ArrowUp, Square, Paperclip, X, FileText, Mic, MicOff, Lightbulb } from "lucide-react";
 
 interface Attachment {
   file: File;
