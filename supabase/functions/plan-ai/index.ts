@@ -30,8 +30,8 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const contextNote = hasExistingApp
-      ? "\n\nDe gebruiker heeft al een bestaande app. Plan de wijzigingen op de bestaande app."
-      : "\n\nDe gebruiker begint vanaf nul. Plan het volledige bouwproces.";
+      ? "\n\nDe gebruiker heeft een bestaande app. Analyseer het probleem in context van hun huidige app en stel een fix-plan voor."
+      : "\n\nDe gebruiker heeft nog geen app. Maak een bouwplan.";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
