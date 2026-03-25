@@ -168,6 +168,12 @@ const Index = () => {
     setTimeout(() => setBuildStatus(null), 2000);
   };
 
+  const saveChatToProject = (msgs: ChatMessage[]) => {
+    if (currentProject) {
+      updateProject(currentProject.id, { chatHistory: msgs });
+    }
+  };
+
   const saveHtmlToProject = (html: string) => {
     if (currentProject) {
       const updated = updateProject(currentProject.id, { html });
@@ -221,10 +227,12 @@ const Index = () => {
               `Nice, hier is je app! 💪\n\n✓ Responsive design inbegrepen\n\nSchiet maar met je feedback.`,
             ];
 
-            setMessages((prev) => [...prev, {
-              role: "assistant",
-              content: isSameHtml ? pick(sameResponses) : mode === "update" ? pick(updateResponses) : pick(createResponses),
-            }]);
+            const assistantContent = isSameHtml ? pick(sameResponses) : mode === "update" ? pick(updateResponses) : pick(createResponses);
+            setMessages((prev) => {
+              const newMsgs = [...prev, { role: "assistant" as const, content: assistantContent }];
+              saveChatToProject(newMsgs);
+              return newMsgs;
+            });
           } else {
             setMessages((prev) => [...prev, { role: "assistant", content: `Geen geldige app ontvangen.\n\n${fullResponse}` }]);
           }
@@ -251,7 +259,7 @@ const Index = () => {
   const handleOpenProject = (project: AppProject) => {
     setCurrentProject(project);
     setGeneratedHtml(project.html);
-    setMessages([]);
+    setMessages(project.chatHistory || []);
     setCurrentView("editor");
   };
 
