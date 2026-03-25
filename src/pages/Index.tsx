@@ -33,10 +33,21 @@ const Index = () => {
   const [showPublish, setShowPublish] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
+  const [previewKey, setPreviewKey] = useState(() => crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  /** Completely reset all project state for a fresh start */
+  const resetProjectState = () => {
+    setMessages([]);
+    setGeneratedHtml(null);
+    setCurrentProject(null);
+    setPlan(null);
+    setPlanPrompt("");
+    setPreviewKey(crypto.randomUUID());
+  };
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { return () => { if (loadingTimerRef.current) clearInterval(loadingTimerRef.current); }; }, []);
