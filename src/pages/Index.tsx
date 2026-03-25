@@ -94,7 +94,13 @@ const Index = () => {
       ? `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}`
       : input;
     const userMsg: ChatMessage = { role: "user", content: userContent, ...(images && { images }) };
-    const conversationForAi: ChatMessage[] = [userMsg];
+    // Send full conversation history so generate-app has full context
+    const conversationForAi: ChatMessage[] = [
+      ...msgsBeforeBuild
+        .filter(m => m.role === "user")
+        .map(m => ({ role: "user" as const, content: m.content, ...(m.images && { images: m.images }) })),
+      userMsg,
+    ];
 
     let fullResponse = "";
     let lastPreviewUpdate = 0;
