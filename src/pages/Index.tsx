@@ -254,6 +254,7 @@ const Index = () => {
     setMessages((prev) => [...prev, cancelMsg]);
   };
 
+  const handleNewProject = () => {
     setMessages([]);
     setGeneratedHtml(null);
     setCurrentProject(null);
