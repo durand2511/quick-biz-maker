@@ -87,8 +87,24 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
   };
 
   const handlePlan = () => {
-    if (!input.trim() || isLoading) return;
-    onRequestPlan(input.trim());
+    if (isLoading) return;
+    if (planActive) {
+      // Toggle off
+      setPlanActive(false);
+      return;
+    }
+    setPlanActive(true);
+  };
+
+  const handleSubmitWithPlan = () => {
+    if (!input.trim() && attachments.length === 0) return;
+    if (planActive && input.trim()) {
+      setPlanActive(false);
+      onRequestPlan(input.trim());
+      setInput("");
+      return;
+    }
+    handleSubmit();
   };
 
   const toggleDictation = useCallback(() => {
