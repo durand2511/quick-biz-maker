@@ -116,7 +116,7 @@ const Index = () => {
           const summaryMsg: ChatMessage = {
             role: "assistant",
             title: mode === "update" ? "Wijziging toegepast" : "App gebouwd",
-            content: input,
+            content: "",
             details: planDetails,
           };
           setMessages((prev) => {
