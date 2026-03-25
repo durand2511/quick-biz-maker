@@ -24,9 +24,9 @@ const LOADING_STAGES = [
 
 const INIT_STAGES = [
   "Starting fresh session...",
-  "⏳ Clearing previous data",
-  "⏳ Creating new environment",
-  "⏳ Ready",
+  "Clearing previous data",
+  "Creating new environment",
+  "Ready",
 ];
 
 const Index = () => {
