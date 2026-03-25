@@ -47,6 +47,8 @@ WHEN THE USER ASKS TO MODIFY AN EXISTING APP:
 - Apply ONLY the requested changes while keeping everything else intact.
 - Return the FULL updated HTML document.
 - Treat the latest user message as the highest-priority instruction.
+- OPTIMIZE FOR SPEED: minimize unnecessary code regeneration.
+- Keep the same structure and only change the affected parts.
 
 IMPORTANT: Your entire response must be ONLY valid HTML starting with <!DOCTYPE html>. Nothing else.`;
 
@@ -67,13 +69,16 @@ serve(async (req) => {
     if (currentHtml) {
       aiMessages.push({
         role: "system",
-        content: `The user's current app HTML is:\n\n${currentHtml}\n\nApply the user's requested changes to this HTML. Return the complete updated HTML.`,
+        content: `The user's current app HTML is:\n\n${currentHtml}\n\nApply ONLY the user's requested changes to this HTML. Keep everything else exactly the same. Return the complete updated HTML. Prioritize speed — change as little as necessary.`,
       });
     }
 
     for (const msg of messages) {
       aiMessages.push({ role: msg.role, content: msg.content });
     }
+
+    // Use faster model for updates, full model for new apps
+    const model = currentHtml ? "google/gemini-2.5-flash" : "openai/gpt-5.2";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -82,7 +87,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5.2",
+        model,
         messages: aiMessages,
         stream: true,
       }),
