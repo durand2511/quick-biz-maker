@@ -50,7 +50,7 @@ const AppSidebar = ({
     return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" });
   };
 
-  const recentProjects = projects.slice(0, 6);
+  const recentProjects = projects.slice(0, 10);
 
   return (
     <aside className="w-56 shrink-0 h-screen flex flex-col bg-sidebar-background border-r border-sidebar-border">
