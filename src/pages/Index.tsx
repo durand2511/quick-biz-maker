@@ -294,10 +294,7 @@ const Index = () => {
   };
 
   const handleNewProject = () => {
-    setMessages([]);
-    setGeneratedHtml(null);
-    setCurrentProject(null);
-    setPlan(null);
+    resetProjectState();
     setCurrentView("home");
   };
 
