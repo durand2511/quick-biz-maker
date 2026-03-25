@@ -6,6 +6,7 @@ interface Props {
   messages: ChatMessage[];
   isLoading: boolean;
   loadingText?: string;
+  lastAssistantIndex?: number;
 }
 
 const AnimatedDots = () => {
