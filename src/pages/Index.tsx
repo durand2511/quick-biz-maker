@@ -36,6 +36,7 @@ const Index = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { return () => { if (loadingTimerRef.current) clearInterval(loadingTimerRef.current); }; }, []);
@@ -219,10 +220,6 @@ const Index = () => {
   const handleApprovePlan = async () => {
     const currentPlan = plan;
     setPlan(null);
-    const planMsg: ChatMessage = { role: "assistant" as const, content: `Plan goedgekeurd — ik ga aan de slag!`, title: "Plan goedgekeurd" };
-    const newMsgs = [...messages, planMsg];
-    setMessages(newMsgs);
-    saveChatToProject(newMsgs);
     setIsLoading(true);
     setLoadingText("Plan uitvoeren...");
 
@@ -232,7 +229,7 @@ const Index = () => {
       : undefined;
 
     try {
-      await executeBuild(planPrompt, newMsgs, planDetailsText);
+      await executeBuild(planPrompt, messages, planDetailsText);
     } catch (e) {
       toast.error("Uitvoering mislukt.");
       setIsLoading(false);
@@ -245,6 +242,16 @@ const Index = () => {
     setPlan(null);
     const rejectMsg: ChatMessage = { role: "assistant" as const, content: "Geen probleem, pas je verzoek aan en probeer het opnieuw.", title: "Plan afgewezen" };
     setMessages((prev) => [...prev, rejectMsg]);
+  };
+
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsLoading(false);
+    setIsStreaming(false);
+    stopLoadingCycle();
+    const cancelMsg: ChatMessage = { role: "assistant" as const, content: "Afgebroken.", title: "Gestopt" };
+    setMessages((prev) => [...prev, cancelMsg]);
   };
 
   const handleNewProject = () => {
@@ -336,6 +343,7 @@ const Index = () => {
                     <ChatInput
                       onSend={handleSend}
                       onRequestPlan={handleRequestPlan}
+                      onCancel={handleCancel}
                       isLoading={isLoading}
                       placeholder="Beschrijf wijzigingen..."
                       plan={plan}
@@ -350,6 +358,7 @@ const Index = () => {
                     <ChatInput
                       onSend={handleSend}
                       onRequestPlan={handleRequestPlan}
+                      onCancel={handleCancel}
                       isLoading={isLoading}
                       placeholder="Beschrijf wijzigingen..."
                       plan={plan}

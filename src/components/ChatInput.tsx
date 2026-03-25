@@ -19,6 +19,7 @@ export interface PlanData {
 interface Props {
   onSend: (message: string, attachments?: File[]) => void;
   onRequestPlan: (message: string) => void;
+  onCancel?: () => void;
   isLoading: boolean;
   placeholder?: string;
   plan?: PlanData | null;
@@ -26,7 +27,7 @@ interface Props {
   onRejectPlan?: () => void;
 }
 
-const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onApprovePlan, onRejectPlan }: Props) => {
+const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, plan, onApprovePlan, onRejectPlan }: Props) => {
   const [input, setInput] = useState("");
   const [queued, setQueued] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -271,9 +272,13 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
             </div>
 
             <button
-              onClick={handleSubmitWithPlan}
-              disabled={!input.trim() && attachments.length === 0}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-all hover:opacity-80 disabled:opacity-30"
+              onClick={isLoading ? onCancel : handleSubmitWithPlan}
+              disabled={!isLoading && !input.trim() && attachments.length === 0}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all hover:opacity-80 disabled:opacity-30 ${
+                isLoading
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-foreground text-background"
+              }`}
             >
               {isLoading ? (
                 <Square className="h-3.5 w-3.5 fill-current" />
