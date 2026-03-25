@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
@@ -33,6 +34,7 @@ const INIT_STAGES = [
 
 const Index = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -430,6 +432,13 @@ const Index = () => {
                     >
                       <FolderOpen className="h-4 w-4" />
                       Alle projecten
+                    </button>
+                    <button
+                      onClick={() => navigate("/profile")}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <User className="h-4 w-4" />
+                      Profiel
                     </button>
                     <button
                       onClick={signOut}

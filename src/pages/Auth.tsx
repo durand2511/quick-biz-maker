@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+
+type AuthView = "login" | "register" | "forgot";
 
 const Auth = () => {
   const { signIn, signUp } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -15,10 +18,25 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) return;
+    if (!email.trim()) return;
     setLoading(true);
 
-    if (isLogin) {
+    if (view === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Reset link verstuurd! Check je e-mail.");
+      }
+      setLoading(false);
+      return;
+    }
+
+    if (!password.trim()) { setLoading(false); return; }
+
+    if (view === "login") {
       const { error } = await signIn(email, password);
       if (error) {
         toast.error(error);
@@ -36,15 +54,16 @@ const Auth = () => {
         setLoading(false);
       } else {
         toast.success("Account aangemaakt! Controleer je e-mail om te bevestigen.");
-        setIsLogin(true);
+        setView("login");
         setLoading(false);
       }
     }
   };
 
+  const title = view === "login" ? "Log in om verder te gaan" : view === "register" ? "Maak een account aan" : "Wachtwoord vergeten";
+
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background */}
       <div
         className="absolute inset-0 opacity-80"
         style={{
@@ -59,24 +78,31 @@ const Auth = () => {
       />
 
       <div className="relative z-10 w-full max-w-md px-4">
-        {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
           <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-card/60 backdrop-blur border border-border/50 text-xs text-muted-foreground">
             <Sparkles className="h-3 w-3 text-primary" />
             <span>AI-Powered App Builder</span>
           </div>
           <h1 className="text-3xl font-bold text-foreground">Mellow</h1>
-          <p className="text-sm text-muted-foreground">
-            {isLogin ? "Log in om verder te gaan" : "Maak een account aan"}
-          </p>
+          <p className="text-sm text-muted-foreground">{title}</p>
         </div>
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border/50 p-6 shadow-2xl space-y-4"
         >
-          {!isLogin && (
+          {view === "forgot" && (
+            <button
+              type="button"
+              onClick={() => setView("login")}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Terug naar inloggen
+            </button>
+          )}
+
+          {view === "register" && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Naam</label>
               <Input
@@ -88,6 +114,7 @@ const Auth = () => {
               />
             </div>
           )}
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">E-mail</label>
             <Input
@@ -99,34 +126,56 @@ const Auth = () => {
               className="bg-secondary/50 border-border/50"
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Wachtwoord</label>
-            <Input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="bg-secondary/50 border-border/50"
-            />
-          </div>
+
+          {view !== "forgot" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground">Wachtwoord</label>
+                {view === "login" && (
+                  <button
+                    type="button"
+                    onClick={() => setView("forgot")}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Wachtwoord vergeten?
+                  </button>
+                )}
+              </div>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="bg-secondary/50 border-border/50"
+              />
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isLogin ? "Inloggen" : "Account aanmaken"}
+            {view === "login" ? "Inloggen" : view === "register" ? "Account aanmaken" : "Stuur reset link"}
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground">
-            {isLogin ? "Nog geen account? " : "Al een account? "}
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline font-medium"
-            >
-              {isLogin ? "Registreren" : "Inloggen"}
-            </button>
-          </p>
+          {view !== "forgot" && (
+            <p className="text-center text-xs text-muted-foreground">
+              {view === "login" ? "Nog geen account? " : "Al een account? "}
+              <button
+                type="button"
+                onClick={() => setView(view === "login" ? "register" : "login")}
+                className="text-primary hover:underline font-medium"
+              >
+                {view === "login" ? "Registreren" : "Inloggen"}
+              </button>
+            </p>
+          )}
+
+          {view === "forgot" && (
+            <p className="text-center text-xs text-muted-foreground">
+              We sturen een link naar je e-mail waarmee je een nieuw wachtwoord kunt instellen.
+            </p>
+          )}
         </form>
       </div>
     </div>

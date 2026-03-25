@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, Clock, Globe, Trash2, LayoutGrid, List } from "lucide-react";
 import { type AppProject, getProjects, deleteProject } from "@/lib/projects";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Props {
@@ -20,6 +21,22 @@ const AllProjectsView = ({ onNewProject, onOpenProject }: Props) => {
 
   useEffect(() => {
     loadProjects();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel("projects-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "projects" },
+        () => {
+          loadProjects();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
