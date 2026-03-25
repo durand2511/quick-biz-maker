@@ -49,6 +49,7 @@ export function createProject(name: string, html: string): AppProject {
     domainStatus: "none",
     publishedUrl: null,
     visibility: "public",
+    chatHistory: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
