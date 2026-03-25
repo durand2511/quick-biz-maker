@@ -122,9 +122,6 @@ const Index = () => {
     if (currentProject) {
       const updated = updateProject(currentProject.id, { html });
       if (updated) setCurrentProject(updated);
-    } else {
-      const proj = createProject("Naamloos project", html);
-      setCurrentProject(proj);
     }
   };
 
