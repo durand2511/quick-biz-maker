@@ -26,6 +26,7 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
   const [queued, setQueued] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [planActive, setPlanActive] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -60,7 +61,7 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit();
+      handleSubmitWithPlan();
     }
   };
 
@@ -86,8 +87,24 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
   };
 
   const handlePlan = () => {
-    if (!input.trim() || isLoading) return;
-    onRequestPlan(input.trim());
+    if (isLoading) return;
+    if (planActive) {
+      // Toggle off
+      setPlanActive(false);
+      return;
+    }
+    setPlanActive(true);
+  };
+
+  const handleSubmitWithPlan = () => {
+    if (!input.trim() && attachments.length === 0) return;
+    if (planActive && input.trim()) {
+      setPlanActive(false);
+      onRequestPlan(input.trim());
+      setInput("");
+      return;
+    }
+    handleSubmit();
   };
 
   const toggleDictation = useCallback(() => {
@@ -221,8 +238,12 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
               
               <button
                 onClick={handlePlan}
-                disabled={!input.trim() || isLoading}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
+                disabled={isLoading}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors disabled:opacity-30 ${
+                  planActive
+                    ? "text-primary bg-primary/15 shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
               >
                 <Lightbulb className="h-3.5 w-3.5" />
                 <span>Plan</span>
@@ -242,7 +263,7 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
             </div>
 
             <button
-              onClick={handleSubmit}
+              onClick={handleSubmitWithPlan}
               disabled={!input.trim() && attachments.length === 0}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-all hover:opacity-80 disabled:opacity-30"
             >
