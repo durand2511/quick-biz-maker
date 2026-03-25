@@ -61,16 +61,14 @@ THINK OF IT AS A DIFF: What is the smallest possible change to the existing code
 
 IMPORTANT: Your entire response must be ONLY valid HTML starting with <!DOCTYPE html>. Nothing else.`;
 
-// Convert a ChatMessage with images into OpenAI multipart content format
+// Convert a ChatMessage: strip images and replace with placeholder references in text
 function toAiMessage(msg: { role: string; content: string; images?: string[] }) {
+  let content = msg.content;
   if (msg.images && msg.images.length > 0) {
-    const parts: any[] = [{ type: "text", text: msg.content }];
-    for (const dataUrl of msg.images) {
-      parts.push({ type: "image_url", image_url: { url: dataUrl } });
-    }
-    return { role: msg.role, content: parts };
+    const placeholderList = msg.images.map((_, i) => `{{USER_IMAGE_${i + 1}}}`).join(", ");
+    content += `\n\n[De gebruiker heeft ${msg.images.length} afbeelding(en) geüpload. Gebruik deze placeholders als src in <img> tags: ${placeholderList}]`;
   }
-  return { role: msg.role, content: msg.content };
+  return { role: msg.role, content };
 }
 
 serve(async (req) => {
