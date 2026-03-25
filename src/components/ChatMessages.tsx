@@ -42,10 +42,7 @@ const ChatMessages = ({ messages, isLoading, buildStatus }: Props) => {
 
       {isLoading && (
         <div className="flex gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-primary/15 flex items-center justify-center shrink-0">
-            <Bot className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <div className="bg-secondary rounded-xl px-3.5 py-2.5 text-sm text-muted-foreground w-[85%] space-y-2">
+          <div className="bg-secondary rounded-xl px-3.5 py-2.5 text-sm text-muted-foreground w-[85%] space-y-2 ml-8">
             <div className="flex items-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
               <span className="font-medium">
