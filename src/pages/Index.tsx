@@ -126,6 +126,16 @@ const Index = () => {
     }
   };
 
+  const addVersion = (html: string, label: string) => {
+    const v: Version = {
+      id: crypto.randomUUID(),
+      html,
+      label,
+      timestamp: new Date().toISOString(),
+    };
+    setVersions((prev) => [v, ...prev].slice(0, 50)); // Keep last 50 versions
+  };
+
   const replaceImagePlaceholders = (html: string, images?: string[]): string => {
     if (!images || images.length === 0) return html;
     let result = html;
