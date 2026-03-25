@@ -22,6 +22,13 @@ const LOADING_STAGES = [
   "Bijna klaar...",
 ];
 
+const INIT_STAGES = [
+  "Nieuw project aanmaken...",
+  "Werkruimte initialiseren...",
+  "Sessie voorbereiden...",
+  "Klaar",
+];
+
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -34,10 +41,22 @@ const Index = () => {
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
   const [previewKey, setPreviewKey] = useState(() => crypto.randomUUID());
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [initText, setInitText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  /** Save current project state before switching away */
+  const saveCurrentProject = () => {
+    if (currentProject) {
+      updateProject(currentProject.id, {
+        chatHistory: messages,
+        html: generatedHtml || currentProject.html,
+      });
+    }
+  };
 
   /** Completely reset all project state for a fresh start */
   const resetProjectState = () => {
@@ -47,6 +66,18 @@ const Index = () => {
     setPlan(null);
     setPlanPrompt("");
     setPreviewKey(crypto.randomUUID());
+  };
+
+  /** Show initialization animation */
+  const showInitAnimation = async () => {
+    setIsInitializing(true);
+    for (const stage of INIT_STAGES) {
+      setInitText(stage);
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    await new Promise((r) => setTimeout(r, 300));
+    setIsInitializing(false);
+    setInitText("");
   };
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
