@@ -82,24 +82,24 @@ serve(async (req) => {
 
     // Try to parse JSON from the response
     let message = rawContent;
+    let title = "";
     let shouldBuild = false;
 
     try {
-      // Clean potential markdown code fences
       let cleaned = rawContent.trim();
       if (cleaned.startsWith("```")) {
         cleaned = cleaned.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
       }
       const parsed = JSON.parse(cleaned);
       message = parsed.message || rawContent;
+      title = parsed.title || "";
       shouldBuild = parsed.shouldBuild === true;
     } catch {
-      // If JSON parsing fails, treat as plain text, no build
       message = rawContent;
       shouldBuild = false;
     }
 
-    return new Response(JSON.stringify({ message, shouldBuild }), {
+    return new Response(JSON.stringify({ message, title, shouldBuild }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

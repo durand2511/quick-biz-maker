@@ -15,7 +15,7 @@ export async function chatWithAI({
 }: {
   messages: ChatMessage[];
   hasExistingApp: boolean;
-}): Promise<{ message: string; shouldBuild: boolean }> {
+}): Promise<{ message: string; title: string; shouldBuild: boolean }> {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {

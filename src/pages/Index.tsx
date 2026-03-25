@@ -86,7 +86,7 @@ const Index = () => {
       });
 
       if (!chatResponse.shouldBuild) {
-        const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message }];
+        const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
         setMessages(newMsgs);
         saveChatToProject(newMsgs);
         setIsLoading(false);
@@ -94,7 +94,7 @@ const Index = () => {
       }
 
       // Step 2: Show AI response immediately, then start building
-      const msgsWithResponse = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message }];
+      const msgsWithResponse = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
       setMessages(msgsWithResponse);
       saveChatToProject(msgsWithResponse);
 
