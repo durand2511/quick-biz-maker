@@ -110,18 +110,20 @@ const Index = () => {
           saveHtmlToProject(html);
         }
 
-        // Add a summary message showing what was done
-        const summaryMsg: ChatMessage = {
-          role: "assistant",
-          title: mode === "update" ? "Wijziging toegepast" : "App gebouwd",
-          content: input,
-          details: planDetails || undefined,
-        };
-        setMessages((prev) => {
-          const updated = [...prev, summaryMsg];
-          saveChatToProject(updated);
-          return updated;
-        });
+        // Only add summary for plan-based builds
+        if (planDetails) {
+          const summaryMsg: ChatMessage = {
+            role: "assistant",
+            title: mode === "update" ? "Wijziging toegepast" : "App gebouwd",
+            content: input,
+            details: planDetails,
+          };
+          setMessages((prev) => {
+            const updated = [...prev, summaryMsg];
+            saveChatToProject(updated);
+            return updated;
+          });
+        }
 
         setIsLoading(false);
         setIsStreaming(false);
