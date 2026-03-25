@@ -1,6 +1,7 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const GENERATE_URL = `${SUPABASE_URL}/functions/v1/generate-app`;
 const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-ai`;
+const PLAN_URL = `${SUPABASE_URL}/functions/v1/plan-ai`;
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -27,6 +28,41 @@ export async function chatWithAI({
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ error: "Chat failed" }));
+    throw new Error(data.error || `Error ${resp.status}`);
+  }
+
+  return resp.json();
+}
+
+export interface PlanStep {
+  title: string;
+  description: string;
+}
+
+export interface PlanResult {
+  summary: string;
+  steps: PlanStep[];
+}
+
+/** Call the plan AI to generate a structured build plan */
+export async function planWithAI({
+  prompt,
+  hasExistingApp,
+}: {
+  prompt: string;
+  hasExistingApp: boolean;
+}): Promise<PlanResult> {
+  const resp = await fetch(PLAN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ prompt, hasExistingApp }),
+  });
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({ error: "Plan failed" }));
     throw new Error(data.error || `Error ${resp.status}`);
   }
 

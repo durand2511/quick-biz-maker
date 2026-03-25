@@ -6,8 +6,13 @@ interface Attachment {
   preview?: string;
 }
 
+export interface PlanStep {
+  title: string;
+  description: string;
+}
+
 export interface PlanData {
-  steps: string[];
+  steps: PlanStep[];
   summary: string;
 }
 
@@ -162,11 +167,14 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
             Plan
           </div>
           <p className="text-sm text-muted-foreground">{plan.summary}</p>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {plan.steps.map((step, i) => (
-              <div key={i} className="flex gap-2 text-sm text-foreground">
-                <span className="text-muted-foreground shrink-0">{i + 1}.</span>
-                <span>{step}</span>
+              <div key={i} className="flex gap-2 text-sm">
+                <span className="text-muted-foreground shrink-0 font-medium">{i + 1}.</span>
+                <div>
+                  <span className="font-medium text-foreground">{step.title}</span>
+                  <p className="text-muted-foreground text-xs mt-0.5">{step.description}</p>
+                </div>
               </div>
             ))}
           </div>
