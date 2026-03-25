@@ -26,6 +26,7 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
   const [queued, setQueued] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [planActive, setPlanActive] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
