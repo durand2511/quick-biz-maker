@@ -46,6 +46,9 @@ const Index = () => {
   const [currentProject, setCurrentProject] = useState<AppProject | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showVisualEditor, setShowVisualEditor] = useState(false);
+  const [versions, setVersions] = useState<Version[]>([]);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [planPrompt, setPlanPrompt] = useState("");
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
