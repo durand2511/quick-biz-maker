@@ -380,6 +380,14 @@ const Index = () => {
 
         {currentView === "editor" && (
           <>
+            {isInitializing && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground animate-pulse">{initText}</p>
+                </div>
+              </div>
+            )}
             <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="relative group">
