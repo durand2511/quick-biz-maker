@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Home, Search, FolderOpen, Clock, Plus, Trash2, Globe } from "lucide-react";
+import mellowLogo from "@/assets/mellow-logo.png";
 import { type AppProject, getProjects, deleteProject } from "@/lib/projects";
 import { toast } from "sonner";
 
