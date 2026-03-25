@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Globe, ChevronDown, Home, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ChatInput from "@/components/ChatInput";
+import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
 import LivePreview from "@/components/LivePreview";
 import WelcomeScreen from "@/components/WelcomeScreen";
@@ -31,6 +31,8 @@ const Index = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentProject, setCurrentProject] = useState<AppProject | null>(null);
   const [showPublish, setShowPublish] = useState(false);
+  const [plan, setPlan] = useState<PlanData | null>(null);
+  const [planPrompt, setPlanPrompt] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -69,6 +71,57 @@ const Index = () => {
     }
   };
 
+  const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[]) => {
+    startLoadingCycle();
+    setIsStreaming(true);
+
+    const mode = generatedHtml ? "update" : "create";
+    const userMsg: ChatMessage = { role: "user", content: input };
+    const conversationForAi: ChatMessage[] = generatedHtml
+      ? [{ role: "user", content: `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}` }]
+      : [userMsg];
+
+    let fullResponse = "";
+    let lastPreviewUpdate = 0;
+    const PREVIEW_INTERVAL = 800;
+
+    await streamGenerateApp({
+      messages: conversationForAi,
+      currentHtml: generatedHtml,
+      onDelta: (chunk) => {
+        fullResponse += chunk;
+        const now = Date.now();
+        if (now - lastPreviewUpdate > PREVIEW_INTERVAL) {
+          const partial = fullResponse.trim();
+          if (partial.includes("<body") && partial.length > 500) {
+            let previewHtml = partial;
+            if (!previewHtml.includes("</body>")) previewHtml += "\n</body></html>";
+            setGeneratedHtml(previewHtml);
+          }
+          lastPreviewUpdate = now;
+        }
+      },
+      onDone: () => {
+        let html = fullResponse;
+        if (html.includes("```html")) html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "");
+        html = html.trim();
+        if (html.includes("<!DOCTYPE") || html.includes("<html")) {
+          setGeneratedHtml(html);
+          saveHtmlToProject(html);
+        }
+        setIsLoading(false);
+        setIsStreaming(false);
+        stopLoadingCycle();
+      },
+      onError: (error) => {
+        toast.error(error);
+        setIsLoading(false);
+        setIsStreaming(false);
+        stopLoadingCycle();
+      },
+    });
+  };
+
   const handleSend = async (input: string) => {
     if (currentView !== "editor") setCurrentView("editor");
 
@@ -79,7 +132,6 @@ const Index = () => {
     setLoadingText("Even nadenken...");
 
     try {
-      // Step 1: Chat AI understands intent (fast model)
       const chatResponse = await chatWithAI({
         messages: updatedMessages,
         hasExistingApp: !!generatedHtml,
@@ -93,65 +145,11 @@ const Index = () => {
         return;
       }
 
-      // Step 2: Show AI response immediately, then start building
       const msgsWithResponse = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
       setMessages(msgsWithResponse);
       saveChatToProject(msgsWithResponse);
 
-      // Start cycling loading messages
-      startLoadingCycle();
-      setIsStreaming(true);
-
-      // Step 3: Stream HTML with progressive preview updates
-      const mode = generatedHtml ? "update" : "create";
-      const conversationForAi: ChatMessage[] = generatedHtml
-        ? [{ role: "user", content: `Pas de bestaande app gericht aan op basis van deze laatste wijziging: ${input}` }]
-        : [userMsg];
-
-      let fullResponse = "";
-      let lastPreviewUpdate = 0;
-      const PREVIEW_INTERVAL = 800; // Update preview every 800ms for perceived speed
-
-      await streamGenerateApp({
-        messages: conversationForAi,
-        currentHtml: generatedHtml,
-        onDelta: (chunk) => {
-          fullResponse += chunk;
-
-          // Progressive preview: update iframe periodically during streaming
-          const now = Date.now();
-          if (now - lastPreviewUpdate > PREVIEW_INTERVAL) {
-            const partial = fullResponse.trim();
-            // Only show if we have enough HTML structure
-            if (partial.includes("<body") && partial.length > 500) {
-              // Auto-close open tags for valid partial render
-              let previewHtml = partial;
-              if (!previewHtml.includes("</body>")) previewHtml += "\n</body></html>";
-              setGeneratedHtml(previewHtml);
-            }
-            lastPreviewUpdate = now;
-          }
-        },
-        onDone: () => {
-          let html = fullResponse;
-          if (html.includes("```html")) html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "");
-          html = html.trim();
-
-          if (html.includes("<!DOCTYPE") || html.includes("<html")) {
-            setGeneratedHtml(html);
-            saveHtmlToProject(html);
-          }
-          setIsLoading(false);
-          setIsStreaming(false);
-          stopLoadingCycle();
-        },
-        onError: (error) => {
-          toast.error(error);
-          setIsLoading(false);
-          setIsStreaming(false);
-          stopLoadingCycle();
-        },
-      });
+      await executeBuild(input, msgsWithResponse);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Er ging iets mis. Probeer het opnieuw.");
       setIsLoading(false);
@@ -160,10 +158,84 @@ const Index = () => {
     }
   };
 
+  const handleRequestPlan = async (input: string) => {
+    if (currentView !== "editor") setCurrentView("editor");
+    setPlanPrompt(input);
+    setIsLoading(true);
+    setLoadingText("Plan opstellen...");
+
+    const userMsg: ChatMessage = { role: "user", content: input };
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
+
+    try {
+      const resp = await chatWithAI({
+        messages: [...updatedMessages, { role: "user" as const, content: `Maak een stap-voor-stap plan voor dit verzoek. Geef een JSON object met "steps" (array van strings, max 5 stappen) en "summary" (korte samenvatting). Verzoek: ${input}` }],
+        hasExistingApp: !!generatedHtml,
+      });
+
+      // Try to parse plan from message
+      try {
+        const cleaned = resp.message.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        if (parsed.steps && Array.isArray(parsed.steps)) {
+          setPlan({ steps: parsed.steps, summary: parsed.summary || input });
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // If not JSON, create plan from the text
+      }
+
+      // Fallback: create simple plan
+      const lines = resp.message.split("\n").filter((l: string) => l.trim());
+      setPlan({
+        summary: input,
+        steps: lines.length > 1 ? lines.slice(0, 5) : [
+          "Verzoek analyseren",
+          "Structuur opzetten",
+          "Componenten bouwen",
+          "Styling toepassen",
+          "Preview tonen",
+        ],
+      });
+      setIsLoading(false);
+    } catch (e) {
+      toast.error("Plan maken mislukt.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleApprovePlan = async () => {
+    setPlan(null);
+    const planMsg: ChatMessage = { role: "assistant" as const, content: `Plan goedgekeurd — ik ga aan de slag!`, title: "Plan goedgekeurd" };
+    const newMsgs = [...messages, planMsg];
+    setMessages(newMsgs);
+    saveChatToProject(newMsgs);
+    setIsLoading(true);
+    setLoadingText("Plan uitvoeren...");
+
+    try {
+      await executeBuild(planPrompt, newMsgs);
+    } catch (e) {
+      toast.error("Uitvoering mislukt.");
+      setIsLoading(false);
+      setIsStreaming(false);
+      stopLoadingCycle();
+    }
+  };
+
+  const handleRejectPlan = () => {
+    setPlan(null);
+    const rejectMsg: ChatMessage = { role: "assistant" as const, content: "Geen probleem, pas je verzoek aan en probeer het opnieuw.", title: "Plan afgewezen" };
+    setMessages((prev) => [...prev, rejectMsg]);
+  };
+
   const handleNewProject = () => {
     setMessages([]);
     setGeneratedHtml(null);
     setCurrentProject(null);
+    setPlan(null);
     setCurrentView("home");
   };
 
@@ -171,6 +243,7 @@ const Index = () => {
     setCurrentProject(project);
     setGeneratedHtml(project.html);
     setMessages(project.chatHistory || []);
+    setPlan(null);
     setCurrentView("editor");
   };
 
@@ -244,13 +317,29 @@ const Index = () => {
               <div className="w-[380px] flex flex-col border-r border-border shrink-0">
                 {messages.length === 0 && !isLoading ? (
                   <div className="flex-1 flex flex-col items-center justify-center px-4">
-                    <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+                    <ChatInput
+                      onSend={handleSend}
+                      onRequestPlan={handleRequestPlan}
+                      isLoading={isLoading}
+                      placeholder="Beschrijf wijzigingen..."
+                      plan={plan}
+                      onApprovePlan={handleApprovePlan}
+                      onRejectPlan={handleRejectPlan}
+                    />
                   </div>
                 ) : (
                   <>
                     <ChatMessages messages={messages} isLoading={isLoading} loadingText={loadingText} />
                     <div ref={messagesEndRef} />
-                    <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+                    <ChatInput
+                      onSend={handleSend}
+                      onRequestPlan={handleRequestPlan}
+                      isLoading={isLoading}
+                      placeholder="Beschrijf wijzigingen..."
+                      plan={plan}
+                      onApprovePlan={handleApprovePlan}
+                      onRejectPlan={handleRejectPlan}
+                    />
                   </>
                 )}
               </div>
