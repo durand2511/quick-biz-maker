@@ -263,7 +263,7 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
             </div>
 
             <button
-              onClick={handleSubmit}
+              onClick={handleSubmitWithPlan}
               disabled={!input.trim() && attachments.length === 0}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-all hover:opacity-80 disabled:opacity-30"
             >
