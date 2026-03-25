@@ -169,35 +169,14 @@ const Index = () => {
     setMessages(updatedMessages);
 
     try {
-      const resp = await chatWithAI({
-        messages: [...updatedMessages, { role: "user" as const, content: `Maak een stap-voor-stap plan voor dit verzoek. Geef een JSON object met "steps" (array van strings, max 5 stappen) en "summary" (korte samenvatting). Verzoek: ${input}` }],
+      const planResult = await planWithAI({
+        prompt: input,
         hasExistingApp: !!generatedHtml,
       });
 
-      // Try to parse plan from message
-      try {
-        const cleaned = resp.message.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleaned);
-        if (parsed.steps && Array.isArray(parsed.steps)) {
-          setPlan({ steps: parsed.steps, summary: parsed.summary || input });
-          setIsLoading(false);
-          return;
-        }
-      } catch {
-        // If not JSON, create plan from the text
-      }
-
-      // Fallback: create simple plan
-      const lines = resp.message.split("\n").filter((l: string) => l.trim());
       setPlan({
-        summary: input,
-        steps: lines.length > 1 ? lines.slice(0, 5) : [
-          "Verzoek analyseren",
-          "Structuur opzetten",
-          "Componenten bouwen",
-          "Styling toepassen",
-          "Preview tonen",
-        ],
+        summary: planResult.summary,
+        steps: planResult.steps,
       });
       setIsLoading(false);
     } catch (e) {
