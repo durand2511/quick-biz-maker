@@ -257,7 +257,7 @@ const Index = () => {
   const handleOpenProject = (project: AppProject) => {
     setCurrentProject(project);
     setGeneratedHtml(project.html);
-    setMessages([]);
+    setMessages(project.chatHistory || []);
     setCurrentView("editor");
   };
 
