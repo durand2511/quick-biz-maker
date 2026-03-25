@@ -80,7 +80,7 @@ const WelcomeScreen = ({ onSend }: Props) => {
             <button
               onClick={handleSubmit}
               disabled={!input.trim()}
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-30"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-foreground text-background transition-opacity hover:opacity-80 disabled:opacity-30"
             >
               <ArrowUp className="h-4 w-4" />
             </button>

@@ -47,9 +47,9 @@ const ChatInput = ({ onSend, isLoading, placeholder }: Props) => {
         <button
           onClick={handleSubmit}
           disabled={!input.trim() || isLoading}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity hover:opacity-80 disabled:opacity-30"
         >
-          <Send className="h-4 w-4" />
+          <ArrowUp className="h-4 w-4" />
         </button>
       </div>
     </div>
