@@ -358,6 +358,7 @@ const Index = () => {
                     <ChatInput
                       onSend={handleSend}
                       onRequestPlan={handleRequestPlan}
+                      onCancel={handleCancel}
                       isLoading={isLoading}
                       placeholder="Beschrijf wijzigingen..."
                       plan={plan}
