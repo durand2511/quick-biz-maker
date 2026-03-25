@@ -229,7 +229,7 @@ const Index = () => {
       : undefined;
 
     try {
-      await executeBuild(planPrompt, newMsgs, planDetailsText);
+      await executeBuild(planPrompt, messages, planDetailsText);
     } catch (e) {
       toast.error("Uitvoering mislukt.");
       setIsLoading(false);
