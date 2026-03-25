@@ -36,6 +36,7 @@ const Index = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { return () => { if (loadingTimerRef.current) clearInterval(loadingTimerRef.current); }; }, []);
