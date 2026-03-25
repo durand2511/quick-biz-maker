@@ -122,9 +122,6 @@ const Index = () => {
     if (currentProject) {
       const updated = updateProject(currentProject.id, { html });
       if (updated) setCurrentProject(updated);
-    } else {
-      const proj = createProject("Naamloos project", html);
-      setCurrentProject(proj);
     }
   };
 
@@ -231,6 +228,12 @@ const Index = () => {
       resetProjectState();
       setCurrentView("editor");
       await showInitAnimation();
+    }
+
+    // Ensure a project exists before any AI work
+    if (!currentProject) {
+      const newProject = createProject("Nieuw project", "");
+      setCurrentProject(newProject);
     }
 
     // Convert image attachments to base64
@@ -349,6 +352,11 @@ const Index = () => {
   const handleNewChat = async () => {
     saveCurrentProject();
     resetProjectState();
+
+    // Immediately create a new project so it's linked from the start
+    const newProject = createProject("Nieuw project", "");
+    setCurrentProject(newProject);
+
     setCurrentView("editor");
     await showInitAnimation();
   };
