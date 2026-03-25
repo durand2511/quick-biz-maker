@@ -1,3 +1,5 @@
+import type { ChatMessage } from "@/lib/aiStream";
+
 export type DomainStatus = "none" | "pending" | "connected";
 
 export interface AppProject {
@@ -9,6 +11,7 @@ export interface AppProject {
   domainStatus: DomainStatus;
   publishedUrl: string | null;
   visibility: "public" | "private";
+  chatHistory: ChatMessage[];
   createdAt: string;
   updatedAt: string;
 }
