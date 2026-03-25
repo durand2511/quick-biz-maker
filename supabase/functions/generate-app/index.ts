@@ -55,6 +55,7 @@ CRITICAL RULES:
 - If the user asks to REMOVE something, remove ONLY that specific element/section.
 - If the user asks to FIX something, fix ONLY the broken part.
 - All text content should be in Dutch (Netherlands).
+- If the user uploads an image, embed it directly in the HTML using the base64 data URL provided. Use it as src for <img> tags exactly as given.
 
 THINK OF IT AS A DIFF: What is the smallest possible change to the existing code that satisfies the user's request? Make exactly that change and nothing more.
 
