@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Wand2, FolderOpen, Globe } from "lucide-react";
+import { Wand2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
 import LivePreview from "@/components/LivePreview";
 import WelcomeScreen from "@/components/WelcomeScreen";
-import ProjectsSidebar from "@/components/ProjectsSidebar";
+import AppSidebar from "@/components/AppSidebar";
+import AllProjectsView from "@/components/AllProjectsView";
 import PublishPanel from "@/components/PublishPanel";
 import { streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
@@ -130,9 +131,10 @@ const createBuildStatus = (
   })),
 });
 
+type ViewState = "home" | "editor" | "projects";
+
 const Index = () => {
-  const [hasStarted, setHasStarted] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewState>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
@@ -177,7 +179,7 @@ const Index = () => {
   };
 
   const handleSend = async (input: string) => {
-    if (!hasStarted) setHasStarted(true);
+    if (currentView !== "editor") setCurrentView("editor");
     const mode = generatedHtml ? "update" : "create";
     const userMsg: ChatMessage = { role: "user", content: input };
     const updatedMessages = [...messages, userMsg];
@@ -243,14 +245,14 @@ const Index = () => {
     setGeneratedHtml(null);
     setCurrentProject(null);
     setBuildStatus(null);
-    setHasStarted(false);
+    setCurrentView("home");
   };
 
   const handleOpenProject = (project: AppProject) => {
     setCurrentProject(project);
     setGeneratedHtml(project.html);
     setMessages([]);
-    setHasStarted(true);
+    setCurrentView("editor");
   };
 
   const handleProjectUpdate = (updates: Partial<AppProject>) => {
@@ -259,78 +261,66 @@ const Index = () => {
     if (updated) setCurrentProject(updated);
   };
 
-  // Welcome screen with sidebar toggle
-  if (!hasStarted) {
-    return (
-      <>
-        <ProjectsSidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          onNewProject={handleNewProject}
-          onOpenProject={handleOpenProject}
-          activeProjectId={currentProject?.id}
-        />
-        <div className="relative">
-          <div className="absolute top-4 left-4 z-20">
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="text-muted-foreground hover:text-foreground">
-              <FolderOpen className="h-4 w-4 mr-1.5" />
-              Projecten
-            </Button>
-          </div>
-          <WelcomeScreen onSend={handleSend} />
-        </div>
-      </>
-    );
-  }
-
   return (
-    <>
-      <ProjectsSidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+    <div className="flex h-screen bg-background">
+      <AppSidebar
         onNewProject={handleNewProject}
         onOpenProject={handleOpenProject}
+        onShowAllProjects={() => setCurrentView("projects")}
+        onGoHome={() => { setCurrentView("home"); }}
         activeProjectId={currentProject?.id}
+        currentView={currentView}
       />
 
-      <div className="flex flex-col h-screen bg-background">
-        <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="h-8 px-2">
-              <FolderOpen className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-                <Wand2 className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <h1 className="text-sm font-bold">{currentProject?.name || "AppForge"}</h1>
-            </div>
-          </div>
-          <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
-            <Globe className="h-4 w-4 mr-1.5" />
-            Publiceer
-          </Button>
-        </header>
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {currentView === "home" && (
+          <WelcomeScreen onSend={handleSend} />
+        )}
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="w-[380px] flex flex-col border-r border-border shrink-0">
-            <ChatMessages messages={messages} isLoading={isLoading} buildStatus={buildStatus} />
-            <div ref={messagesEndRef} />
-            <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
-          </div>
-          <LivePreview html={generatedHtml} />
-        </div>
-
-        {showPublish && currentProject && (
-          <PublishPanel
-            project={currentProject}
-            html={generatedHtml || ""}
-            onUpdate={handleProjectUpdate}
-            onClose={() => setShowPublish(false)}
+        {currentView === "projects" && (
+          <AllProjectsView
+            onNewProject={handleNewProject}
+            onOpenProject={handleOpenProject}
           />
         )}
+
+        {currentView === "editor" && (
+          <>
+            <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
+                  <Wand2 className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <h1 className="text-sm font-bold">{currentProject?.name || "AppForge"}</h1>
+              </div>
+              <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
+                <Globe className="h-4 w-4 mr-1.5" />
+                Publiceer
+              </Button>
+            </header>
+
+            <div className="flex flex-1 overflow-hidden">
+              <div className="w-[380px] flex flex-col border-r border-border shrink-0">
+                <ChatMessages messages={messages} isLoading={isLoading} buildStatus={buildStatus} />
+                <div ref={messagesEndRef} />
+                <ChatInput onSend={handleSend} isLoading={isLoading} placeholder="Beschrijf wijzigingen..." />
+              </div>
+              <LivePreview html={generatedHtml} />
+            </div>
+
+            {showPublish && currentProject && (
+              <PublishPanel
+                project={currentProject}
+                html={generatedHtml || ""}
+                onUpdate={handleProjectUpdate}
+                onClose={() => setShowPublish(false)}
+              />
+            )}
+          </>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 
