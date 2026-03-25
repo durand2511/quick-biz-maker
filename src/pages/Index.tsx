@@ -168,6 +168,12 @@ const Index = () => {
     setTimeout(() => setBuildStatus(null), 2000);
   };
 
+  const saveChatToProject = (msgs: ChatMessage[]) => {
+    if (currentProject) {
+      updateProject(currentProject.id, { chatHistory: msgs });
+    }
+  };
+
   const saveHtmlToProject = (html: string) => {
     if (currentProject) {
       const updated = updateProject(currentProject.id, { html });
