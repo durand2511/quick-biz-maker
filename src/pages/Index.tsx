@@ -181,11 +181,8 @@ const Index = () => {
 
   const handleSend = async (input: string, attachments?: File[]) => {
     if (currentView !== "editor") {
-      // Starting a new project from home/projects — keep existing project saved, start fresh
-      setMessages([]);
-      setGeneratedHtml(null);
-      setCurrentProject(null);
-      setPlan(null);
+      // Starting a new project — fully reset state so nothing leaks from previous project
+      resetProjectState();
       setCurrentView("editor");
     }
 
