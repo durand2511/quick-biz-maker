@@ -238,8 +238,12 @@ const ChatInput = ({ onSend, onRequestPlan, isLoading, placeholder, plan, onAppr
               
               <button
                 onClick={handlePlan}
-                disabled={!input.trim() || isLoading}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
+                disabled={isLoading}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors disabled:opacity-30 ${
+                  planActive
+                    ? "text-primary bg-primary/15 shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
               >
                 <Lightbulb className="h-3.5 w-3.5" />
                 <span>Plan</span>
