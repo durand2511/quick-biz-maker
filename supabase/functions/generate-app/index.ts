@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are an expert web app generator. Given a user's description, you generate a complete, self-contained HTML page with inline CSS and JavaScript.
+const CREATE_SYSTEM_PROMPT = `You are an expert web app generator. Given a user's description, you generate a complete, self-contained HTML page with inline CSS and JavaScript.
 
 RULES:
 - Output ONLY valid HTML. No markdown, no code fences, no explanations, no comments before <!DOCTYPE html>.
@@ -25,13 +25,6 @@ RULES:
 - Make sure ALL links and buttons work (smooth scroll to sections, toggle menus, etc.).
 - Include proper meta tags for SEO.
 - The page should look like a real, professional website — not a template.
-- Every response must directly satisfy the user's latest request. If they ask for a change, actually modify the app instead of repeating the old version.
-- Keep existing content when editing, unless the user's request implies replacing it.
-- Preserve working features from the current HTML and only change what is needed.
-- If the user asks for functional behavior, include real front-end JavaScript for it in the returned HTML.
-- If currentHtml is provided, the latest user message is the highest-priority instruction and you must make a real visible or functional change that matches it.
-- Never return the same document unchanged unless the latest user request truly requires no modification.
-- When the user asks to fix something, repair the existing implementation instead of only rephrasing text or repeating previous code.
 - Buttons, forms, navigation, downloads and interactive elements must actually work in the browser with front-end JavaScript.
 
 FOR BOOKING/RESERVATION APPS:
@@ -42,13 +35,27 @@ FOR CONTACT FORMS:
 - Include name, email, phone, subject, and message fields.
 - Show validation errors and success feedback.
 
-WHEN THE USER ASKS TO MODIFY AN EXISTING APP:
-- You will receive the current HTML as context.
-- Apply ONLY the requested changes while keeping everything else intact.
-- Return the FULL updated HTML document.
-- Treat the latest user message as the highest-priority instruction.
-- OPTIMIZE FOR SPEED: minimize unnecessary code regeneration.
-- Keep the same structure and only change the affected parts.
+IMPORTANT: Your entire response must be ONLY valid HTML starting with <!DOCTYPE html>. Nothing else.`;
+
+const UPDATE_SYSTEM_PROMPT = `You are a surgical code editor. You receive an existing HTML app and a change request. Your job is to make the MINIMUM changes needed to satisfy the request.
+
+CRITICAL RULES:
+- You MUST return the FULL HTML document (starting with <!DOCTYPE html>), but with ONLY the requested parts changed.
+- DO NOT rewrite sections that are not related to the request.
+- DO NOT change styling, colors, fonts, layout, or structure unless the user explicitly asked for it.
+- DO NOT change text content unless the user explicitly asked for it.
+- DO NOT reorganize or reformat the code.
+- Preserve ALL existing JavaScript functionality, event listeners, animations, and interactivity.
+- Preserve ALL existing CSS classes, inline styles, and Tailwind classes.
+- Preserve ALL existing sections, elements, and structure.
+- Keep the same variable names, function names, and IDs.
+- If the user asks to ADD something, insert it in the appropriate location without touching anything else.
+- If the user asks to CHANGE something, change ONLY that specific element/section.
+- If the user asks to REMOVE something, remove ONLY that specific element/section.
+- If the user asks to FIX something, fix ONLY the broken part.
+- All text content should be in Dutch (Netherlands).
+
+THINK OF IT AS A DIFF: What is the smallest possible change to the existing code that satisfies the user's request? Make exactly that change and nothing more.
 
 IMPORTANT: Your entire response must be ONLY valid HTML starting with <!DOCTYPE html>. Nothing else.`;
 
@@ -62,14 +69,19 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    const isUpdate = !!currentHtml;
     const aiMessages: Array<{ role: string; content: string }> = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: isUpdate ? UPDATE_SYSTEM_PROMPT : CREATE_SYSTEM_PROMPT },
     ];
 
-    if (currentHtml) {
+    if (isUpdate) {
       aiMessages.push({
-        role: "system",
-        content: `The user's current app HTML is:\n\n${currentHtml}\n\nApply ONLY the user's requested changes to this HTML. Keep everything else exactly the same. Return the complete updated HTML. Prioritize speed — change as little as necessary.`,
+        role: "user",
+        content: `Here is my current app code:\n\n${currentHtml}`,
+      });
+      aiMessages.push({
+        role: "assistant",
+        content: "I have your current app memorized. Tell me what to change and I will make only that change.",
       });
     }
 
