@@ -71,6 +71,30 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter((item) => item.type.startsWith("image/"));
+    if (imageItems.length > 0) {
+      e.preventDefault();
+      const newAttachments: Attachment[] = imageItems
+        .map((item) => item.getAsFile())
+        .filter((f): f is File => f !== null)
+        .map((file) => ({
+          file,
+          preview: URL.createObjectURL(file),
+        }));
+      setAttachments((prev) => [...prev, ...newAttachments]);
+    }
+    // For text paste, force a re-render by updating input in the next tick
+    if (!imageItems.length) {
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          setInput(textareaRef.current.value);
+        }
+      });
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const newAttachments: Attachment[] = files.map((file) => {
@@ -230,6 +254,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={placeholder || "Describe what you want to build..."}
             rows={1}
             className="flex-1 resize-none bg-transparent text-sm text-foreground focus:outline-none placeholder:text-muted-foreground"
