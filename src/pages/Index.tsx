@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User } from "lucide-react";
+import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User, History, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatInput, { type PlanData } from "@/components/ChatInput";
 import ChatMessages from "@/components/ChatMessages";
@@ -10,6 +10,8 @@ import AppSidebar from "@/components/AppSidebar";
 import AllProjectsView from "@/components/AllProjectsView";
 import PublishPanel from "@/components/PublishPanel";
 import FileManager from "@/components/FileManager";
+import VersionHistory, { type Version } from "@/components/VersionHistory";
+import VisualEditor from "@/components/VisualEditor";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
 import { useAuth } from "@/contexts/AuthContext";
