@@ -161,7 +161,22 @@ serve(async (req) => {
       shouldBuild = false;
     }
 
-    return new Response(JSON.stringify({ message, title, shouldBuild }), {
+    const result: any = { message, title, shouldBuild };
+    
+    // Parse quickEdits if present
+    try {
+      let cleaned = rawContent.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+      }
+      const parsed = JSON.parse(cleaned);
+      if (parsed.quickEdits && Array.isArray(parsed.quickEdits) && parsed.quickEdits.length > 0) {
+        result.quickEdits = parsed.quickEdits;
+        result.shouldBuild = false; // Quick edits don't need a rebuild
+      }
+    } catch {}
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
