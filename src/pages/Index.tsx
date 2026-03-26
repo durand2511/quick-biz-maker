@@ -204,15 +204,8 @@ const Index = () => {
 
     return "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
   };
-    let result = html;
-    images.forEach((dataUrl, i) => {
-      const placeholder = `{{USER_IMAGE_${i + 1}}}`;
-      while (result.includes(placeholder)) {
-        result = result.replace(placeholder, dataUrl);
-      }
-    });
-    return result;
-  };
+
+
 
   const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string, images?: string[]) => {
     startLoadingCycle();
