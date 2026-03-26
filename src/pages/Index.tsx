@@ -333,6 +333,20 @@ const Index = () => {
         hasExistingApp: hasApp,
       });
 
+      // Handle quick edits (instant, no rebuild)
+      if (chatResponse.quickEdits && chatResponse.quickEdits.length > 0 && generatedHtml) {
+        const updatedHtml = applyQuickEdits(generatedHtml, chatResponse.quickEdits);
+        setGeneratedHtml(updatedHtml);
+        saveHtmlToProject(updatedHtml);
+        addVersion(updatedHtml, "Snelle wijziging");
+        const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
+        setMessages(newMsgs);
+        if (activeProject) updateProject(activeProject.id, { chatHistory: newMsgs });
+        setIsLoading(false);
+        toast.success("Wijziging direct toegepast!");
+        return;
+      }
+
       if (!chatResponse.shouldBuild) {
         const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
         setMessages(newMsgs);
