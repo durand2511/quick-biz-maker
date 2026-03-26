@@ -232,14 +232,17 @@ const Index = () => {
   };
 
   const handleSend = async (input: string, attachments?: File[]) => {
-    if (currentView !== "editor") {
+    const comingFromHome = currentView !== "editor";
+
+    if (comingFromHome) {
       await saveCurrentProject();
       resetProjectState();
       setCurrentView("editor");
       await showInitAnimation();
     }
 
-    if (!currentProject && user) {
+    // Always create a fresh project when coming from home/dashboard
+    if ((comingFromHome || !currentProject) && user) {
       const newProject = await createProject("Nieuw project", "", user.id);
       if (newProject) setCurrentProject(newProject);
     }
