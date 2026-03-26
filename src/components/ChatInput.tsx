@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { ArrowUp, Square, Paperclip, X, FileText, Mic, MicOff, Lightbulb } from "lucide-react";
 
 interface Attachment {
