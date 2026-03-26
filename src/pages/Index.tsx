@@ -239,7 +239,10 @@ const Index = () => {
       await showInitAnimation();
     }
 
-    if (!currentProject && user) {
+    // Always create a new project when starting from the welcome/home screen
+    const needsNewProject = currentView === "editor" && !currentProject;
+    const isFromHome = currentView !== "editor";
+    if ((needsNewProject || isFromHome || !currentProject) && user) {
       const newProject = await createProject("Nieuw project", "", user.id);
       if (newProject) setCurrentProject(newProject);
     }
