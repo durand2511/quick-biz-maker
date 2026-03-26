@@ -178,7 +178,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
   }, [isRecording]);
 
   return (
-    <div className="p-4 flex flex-col items-center">
+    <div className={`p-4 flex flex-col items-center transition-transform duration-300 ease-out ${isFocused ? '-translate-y-3' : 'translate-y-0'}`}>
       {queued && (
         <div className="text-xs text-muted-foreground mb-2">
           Bericht in wachtrij: "{queued.slice(0, 40)}{queued.length > 40 ? "…" : ""}"
