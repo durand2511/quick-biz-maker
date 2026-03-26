@@ -601,7 +601,7 @@ const Index = () => {
                   </>
                 )}
               </div>
-              <LivePreview key={sessionId} html={generatedHtml} isStreaming={isStreaming} isBigChange={isStreaming} />
+              <LivePreview key={sessionId} html={generatedHtml} isStreaming={isStreaming} />
             </div>
 
             {showPublish && currentProject && (
