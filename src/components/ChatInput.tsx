@@ -33,6 +33,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [planActive, setPlanActive] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -177,7 +178,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
   }, [isRecording]);
 
   return (
-    <div className="p-4 flex flex-col items-center">
+    <div className={`p-4 flex flex-col items-center transition-transform duration-300 ease-out ${isFocused ? '-translate-y-3' : 'translate-y-0'}`}>
       {queued && (
         <div className="text-xs text-muted-foreground mb-2">
           Bericht in wachtrij: "{queued.slice(0, 40)}{queued.length > 40 ? "…" : ""}"
@@ -257,6 +258,8 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             placeholder={placeholder || "Describe what you want to build..."}
             rows={1}
             className="flex-1 resize-none bg-transparent text-sm text-foreground focus:outline-none placeholder:text-muted-foreground overflow-y-auto"
