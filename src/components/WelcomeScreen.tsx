@@ -66,12 +66,14 @@ const WelcomeScreen = ({ onSend }: Props) => {
         </h1>
 
         {/* Input box */}
-        <div className="w-full rounded-2xl bg-card/80 backdrop-blur-xl border border-border/50 p-4 shadow-2xl">
+        <div className={`w-full rounded-2xl bg-card/80 backdrop-blur-xl border border-border/50 p-4 shadow-2xl transition-transform duration-300 ease-out ${isFocused ? '-translate-y-3' : 'translate-y-0'}`}>
           <textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             placeholder="Describe the app you want to build..."
             rows={2}
             className="w-full resize-none bg-transparent text-foreground text-sm placeholder:text-muted-foreground focus:outline-none overflow-y-auto"
