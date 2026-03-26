@@ -11,6 +11,13 @@ export interface ChatMessage {
   images?: string[]; // base64 data URLs
 }
 
+export interface QuickEdit {
+  type: "color" | "fontSize" | "fontFamily" | "text" | "bgColor";
+  target: string;
+  value: string;
+  scope: "global" | "targeted";
+}
+
 /** Call the conversational AI to understand intent and respond naturally */
 export async function chatWithAI({
   messages,
@@ -18,7 +25,7 @@ export async function chatWithAI({
 }: {
   messages: ChatMessage[];
   hasExistingApp: boolean;
-}): Promise<{ message: string; title: string; shouldBuild: boolean }> {
+}): Promise<{ message: string; title: string; shouldBuild: boolean; quickEdits?: QuickEdit[] }> {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
