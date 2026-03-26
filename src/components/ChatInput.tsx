@@ -44,7 +44,8 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
     const wrap = wrapRef.current;
     if (!el || !wrap) return;
     el.style.height = "0px";
-    const h = Math.min(el.scrollHeight, 400);
+    const minH = 36;
+    const h = Math.max(Math.min(el.scrollHeight, 400), minH);
     el.style.height = `${h}px`;
     wrap.style.height = `${h + 48}px`;
   }, [input]);
