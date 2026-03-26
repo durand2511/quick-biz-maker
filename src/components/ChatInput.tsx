@@ -251,7 +251,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
         )}
 
         {/* Input bar with all actions inside */}
-        <div className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3 gap-2">
+        <div className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3 gap-2 transition-all duration-200 ease-out">
           <textarea
             ref={textareaRef}
             value={input}
