@@ -1,15 +1,65 @@
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Smartphone, Monitor, FileDown, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 
 interface Props {
   html: string | null;
   isStreaming?: boolean;
+  isBigChange?: boolean;
 }
 
-const LivePreview = ({ html, isStreaming }: Props) => {
+const IFRAME_SHELL = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;height:100%;overflow:auto;}</style></head>
+<body>
+<script>
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'mellow-update') {
+    document.open();
+    document.write(e.data.html);
+    document.close();
+  }
+});
+window.parent.postMessage({type:'mellow-ready'},'*');
+</script>
+</body></html>`;
+
+const LivePreview = ({ html, isStreaming, isBigChange }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const readyRef = useRef(false);
+  const pendingHtmlRef = useRef<string | null>(null);
+
+  const sendHtml = useCallback((htmlContent: string) => {
+    const iframe = iframeRef.current;
+    if (iframe?.contentWindow && readyRef.current) {
+      iframe.contentWindow.postMessage({ type: "mellow-update", html: htmlContent }, "*");
+      pendingHtmlRef.current = null;
+    } else {
+      pendingHtmlRef.current = htmlContent;
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "mellow-ready") {
+        readyRef.current = true;
+        if (pendingHtmlRef.current) {
+          sendHtml(pendingHtmlRef.current);
+        } else if (html) {
+          sendHtml(html);
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [html, sendHtml]);
+
+  useEffect(() => {
+    if (html) {
+      sendHtml(html);
+    }
+  }, [html, sendHtml]);
 
   const handleDownloadHtml = () => {
     if (!html) return;
@@ -52,7 +102,7 @@ const LivePreview = ({ html, isStreaming }: Props) => {
           <div className="w-3 h-3 rounded-full bg-accent-foreground/20" />
           <div className="w-3 h-3 rounded-full bg-accent-foreground/15" />
           <span className="text-xs text-muted-foreground ml-3">Preview</span>
-          {isStreaming && (
+          {isStreaming && isBigChange && (
             <div className="flex items-center gap-1.5 ml-2 text-xs text-primary animate-pulse">
               <Loader2 className="h-3 w-3 animate-spin" />
               <span>Aan het opbouwen...</span>
@@ -80,7 +130,8 @@ const LivePreview = ({ html, isStreaming }: Props) => {
 
       <div className="flex-1 flex items-start justify-center p-4 overflow-auto">
         <iframe
-          srcDoc={html}
+          ref={iframeRef}
+          srcDoc={IFRAME_SHELL}
           className={`bg-card border border-border rounded-lg shadow-sm transition-all duration-300 h-full ${
             isMobile ? "w-[375px]" : "w-full"
           }`}
