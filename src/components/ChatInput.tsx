@@ -251,7 +251,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
         )}
 
         {/* Input bar with all actions inside */}
-        <div className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3 gap-2 transition-all duration-200 ease-out">
+        <div className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3 gap-2 transition-all duration-300 ease-out">
           <textarea
             ref={textareaRef}
             value={input}
@@ -262,7 +262,8 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder || "Describe what you want to build..."}
             rows={1}
-            className="flex-1 resize-none bg-transparent text-sm text-foreground focus:outline-none placeholder:text-muted-foreground overflow-y-auto"
+            className="flex-1 resize-none bg-transparent text-sm text-foreground focus:outline-none placeholder:text-muted-foreground overflow-y-auto transition-[height] duration-300 ease-out"
+            style={{ maxHeight: "400px" }}
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
