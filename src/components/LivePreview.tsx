@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Smartphone, Monitor, FileDown, Loader2 } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface Props {
@@ -8,53 +8,8 @@ interface Props {
   isStreaming?: boolean;
 }
 
-// Wrapper HTML that listens for content updates via postMessage
-const SHELL_HTML = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>html,body{margin:0;padding:0;height:100%;overflow:auto;}</style>
-</head><body>
-<script>
-window.addEventListener('message', function(e) {
-  if (e.data && e.data.type === '__lp_update') {
-    document.open();
-    document.write(e.data.html);
-    document.close();
-  }
-});
-</script>
-</body></html>`;
-
 const LivePreview = ({ html, isStreaming }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const shellLoaded = useRef(false);
-  const pendingHtml = useRef<string | null>(null);
-
-  // Send HTML content to iframe via postMessage
-  const pushContent = useCallback((content: string) => {
-    const iframe = iframeRef.current;
-    if (iframe?.contentWindow && shellLoaded.current) {
-      iframe.contentWindow.postMessage({ type: '__lp_update', html: content }, '*');
-    } else {
-      pendingHtml.current = content;
-    }
-  }, []);
-
-  // When the shell iframe loads, mark ready and push any pending content
-  const handleIframeLoad = useCallback(() => {
-    shellLoaded.current = true;
-    if (pendingHtml.current) {
-      pushContent(pendingHtml.current);
-      pendingHtml.current = null;
-    }
-  }, [pushContent]);
-
-  // Push new HTML whenever it changes
-  useEffect(() => {
-    if (html) {
-      pushContent(html);
-    }
-  }, [html, pushContent]);
 
   const handleDownloadHtml = () => {
     if (!html) return;
@@ -125,9 +80,7 @@ const LivePreview = ({ html, isStreaming }: Props) => {
 
       <div className="flex-1 flex items-start justify-center p-4 overflow-auto">
         <iframe
-          ref={iframeRef}
-          srcDoc={SHELL_HTML}
-          onLoad={handleIframeLoad}
+          srcDoc={html}
           className={`bg-card border border-border rounded-lg shadow-sm transition-all duration-300 h-full ${
             isMobile ? "w-[375px]" : "w-full"
           }`}
