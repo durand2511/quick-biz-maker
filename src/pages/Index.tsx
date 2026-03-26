@@ -268,22 +268,23 @@ const Index = () => {
     setLoadingText("Even nadenken...");
 
     try {
+      const hasApp = comingFromHome ? false : !!generatedHtml;
       const chatResponse = await chatWithAI({
         messages: updatedMessages,
-        hasExistingApp: !!generatedHtml,
+        hasExistingApp: hasApp,
       });
 
       if (!chatResponse.shouldBuild) {
         const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
         setMessages(newMsgs);
-        saveChatToProject(newMsgs);
+        if (activeProject) updateProject(activeProject.id, { chatHistory: newMsgs });
         setIsLoading(false);
         return;
       }
 
       const msgsWithResponse = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
       setMessages(msgsWithResponse);
-      saveChatToProject(msgsWithResponse);
+      if (activeProject) updateProject(activeProject.id, { chatHistory: msgsWithResponse });
 
       await executeBuild(input, msgsWithResponse, undefined, images);
     } catch (e) {
