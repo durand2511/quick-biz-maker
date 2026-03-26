@@ -14,6 +14,7 @@ const suggestions = [
 
 const WelcomeScreen = ({ onSend }: Props) => {
   const [input, setInput] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
