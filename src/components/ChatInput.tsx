@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { ArrowUp, Square, Paperclip, X, FileText, Mic, MicOff, Lightbulb } from "lucide-react";
 
 interface Attachment {
@@ -37,12 +37,16 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 400) + "px";
-    }
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    const wrap = wrapRef.current;
+    if (!el || !wrap) return;
+    el.style.height = "0px";
+    const h = Math.min(el.scrollHeight, 400);
+    el.style.height = `${h}px`;
+    wrap.style.height = `${h + 48}px`;
   }, [input]);
 
   useEffect(() => {
@@ -251,7 +255,7 @@ const ChatInput = ({ onSend, onRequestPlan, onCancel, isLoading, placeholder, pl
         )}
 
         {/* Input bar with all actions inside */}
-        <div className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3 gap-2 transition-all duration-300 ease-out">
+        <div ref={wrapRef} className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3 gap-2 overflow-hidden transition-[height] duration-200 ease-out">
           <textarea
             ref={textareaRef}
             value={input}
