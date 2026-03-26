@@ -148,6 +148,72 @@ const Index = () => {
     return result;
   };
 
+  /** Apply quick CSS/text edits directly to the HTML without a full AI rebuild */
+  const applyQuickEdits = (html: string, edits: QuickEdit[]): string => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    for (const edit of edits) {
+      try {
+        const cssProperty = edit.type === "color" ? "color"
+          : edit.type === "bgColor" ? "background-color"
+          : edit.type === "fontSize" ? "font-size"
+          : edit.type === "fontFamily" ? "font-family"
+          : null;
+
+        if (edit.type === "text") {
+          const els = doc.querySelectorAll(edit.target);
+          els.forEach(el => { el.textContent = edit.value; });
+        } else if (cssProperty) {
+          if (edit.scope === "global" && (edit.target === "body" || edit.target === "*")) {
+            // For global scope, inject/update a style tag
+            let styleTag = doc.querySelector('style[data-quick-edit]');
+            if (!styleTag) {
+              styleTag = doc.createElement("style");
+              styleTag.setAttribute("data-quick-edit", "true");
+              doc.head.appendChild(styleTag);
+            }
+            // Append the rule
+            styleTag.textContent += `\n${edit.target} { ${cssProperty}: ${edit.value} !important; }`;
+            // Also apply to common children for color/bg changes
+            if (cssProperty === "color") {
+              styleTag.textContent += `\n${edit.target} * { ${cssProperty}: ${edit.value} !important; }`;
+            }
+          } else {
+            // Targeted: apply inline styles
+            const els = doc.querySelectorAll(edit.target);
+            els.forEach(el => {
+              (el as HTMLElement).style.setProperty(cssProperty, edit.value, "important");
+            });
+            // If no elements matched by selector, try broader approach
+            if (els.length === 0) {
+              let styleTag = doc.querySelector('style[data-quick-edit]');
+              if (!styleTag) {
+                styleTag = doc.createElement("style");
+                styleTag.setAttribute("data-quick-edit", "true");
+                doc.head.appendChild(styleTag);
+              }
+              styleTag.textContent += `\n${edit.target} { ${cssProperty}: ${edit.value} !important; }`;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Quick edit failed for target:", edit.target, e);
+      }
+    }
+
+    return "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+  };
+    let result = html;
+    images.forEach((dataUrl, i) => {
+      const placeholder = `{{USER_IMAGE_${i + 1}}}`;
+      while (result.includes(placeholder)) {
+        result = result.replace(placeholder, dataUrl);
+      }
+    });
+    return result;
+  };
+
   const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string, images?: string[]) => {
     startLoadingCycle();
     setIsStreaming(true);
