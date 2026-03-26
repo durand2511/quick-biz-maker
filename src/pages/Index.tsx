@@ -12,7 +12,7 @@ import PublishPanel from "@/components/PublishPanel";
 import FileManager from "@/components/FileManager";
 import VersionHistory, { type Version } from "@/components/VersionHistory";
 import VisualEditor from "@/components/VisualEditor";
-import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage } from "@/lib/aiStream";
+import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage, type QuickEdit } from "@/lib/aiStream";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -148,6 +148,65 @@ const Index = () => {
     return result;
   };
 
+  /** Apply quick CSS/text edits directly to the HTML without a full AI rebuild */
+  const applyQuickEdits = (html: string, edits: QuickEdit[]): string => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    for (const edit of edits) {
+      try {
+        const cssProperty = edit.type === "color" ? "color"
+          : edit.type === "bgColor" ? "background-color"
+          : edit.type === "fontSize" ? "font-size"
+          : edit.type === "fontFamily" ? "font-family"
+          : null;
+
+        if (edit.type === "text") {
+          const els = doc.querySelectorAll(edit.target);
+          els.forEach(el => { el.textContent = edit.value; });
+        } else if (cssProperty) {
+          if (edit.scope === "global" && (edit.target === "body" || edit.target === "*")) {
+            // For global scope, inject/update a style tag
+            let styleTag = doc.querySelector('style[data-quick-edit]');
+            if (!styleTag) {
+              styleTag = doc.createElement("style");
+              styleTag.setAttribute("data-quick-edit", "true");
+              doc.head.appendChild(styleTag);
+            }
+            // Append the rule
+            styleTag.textContent += `\n${edit.target} { ${cssProperty}: ${edit.value} !important; }`;
+            // Also apply to common children for color/bg changes
+            if (cssProperty === "color") {
+              styleTag.textContent += `\n${edit.target} * { ${cssProperty}: ${edit.value} !important; }`;
+            }
+          } else {
+            // Targeted: apply inline styles
+            const els = doc.querySelectorAll(edit.target);
+            els.forEach(el => {
+              (el as HTMLElement).style.setProperty(cssProperty, edit.value, "important");
+            });
+            // If no elements matched by selector, try broader approach
+            if (els.length === 0) {
+              let styleTag = doc.querySelector('style[data-quick-edit]');
+              if (!styleTag) {
+                styleTag = doc.createElement("style");
+                styleTag.setAttribute("data-quick-edit", "true");
+                doc.head.appendChild(styleTag);
+              }
+              styleTag.textContent += `\n${edit.target} { ${cssProperty}: ${edit.value} !important; }`;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Quick edit failed for target:", edit.target, e);
+      }
+    }
+
+    return "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+  };
+
+
+
   const executeBuild = async (input: string, msgsBeforeBuild: ChatMessage[], planDetails?: string, images?: string[]) => {
     startLoadingCycle();
     setIsStreaming(true);
@@ -273,6 +332,20 @@ const Index = () => {
         messages: updatedMessages,
         hasExistingApp: hasApp,
       });
+
+      // Handle quick edits (instant, no rebuild)
+      if (chatResponse.quickEdits && chatResponse.quickEdits.length > 0 && generatedHtml) {
+        const updatedHtml = applyQuickEdits(generatedHtml, chatResponse.quickEdits);
+        setGeneratedHtml(updatedHtml);
+        saveHtmlToProject(updatedHtml);
+        addVersion(updatedHtml, "Snelle wijziging");
+        const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
+        setMessages(newMsgs);
+        if (activeProject) updateProject(activeProject.id, { chatHistory: newMsgs });
+        setIsLoading(false);
+        toast.success("Wijziging direct toegepast!");
+        return;
+      }
 
       if (!chatResponse.shouldBuild) {
         const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];

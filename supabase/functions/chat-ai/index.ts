@@ -27,6 +27,30 @@ BIJ WIJZIGINGEN AAN BESTAANDE APP:
 - Zet shouldBuild op true
 - Leg kort uit wat je gaat aanpassen
 
+SNELLE WIJZIGINGEN (quickEdit):
+Als de gebruiker een SIMPELE visuele wijziging vraagt aan een BESTAANDE app, zoals:
+- Kleur veranderen (achtergrond, tekst, knoppen, etc.)
+- Lettertype veranderen
+- Tekst grootte aanpassen
+- Simpele tekst wijzigen (titel, knoptekst, etc.)
+- Rand/border aanpassen
+
+Dan geef je een quickEdit object mee met:
+- "type": "color" | "fontSize" | "fontFamily" | "text" | "bgColor"
+- "target": CSS selector of beschrijving van het element (bijv. "body", "nav", "h1", ".hero", "button", "footer", "a")
+- "value": de nieuwe waarde (bijv. "#3b82f6", "24px", "Arial", "Welkom!", "red")
+- "scope": "global" (hele pagina) of "targeted" (specifiek element)
+
+VOORBEELDEN quickEdit:
+- "Maak de achtergrond blauw" → quickEdit: { type: "bgColor", target: "body", value: "#3b82f6", scope: "global" }
+- "Maak de titel rood" → quickEdit: { type: "color", target: "h1", value: "#ef4444", scope: "targeted" }
+- "Grotere tekst" → quickEdit: { type: "fontSize", target: "body", value: "18px", scope: "global" }
+- "Verander de knoptekst naar Bestel nu" → quickEdit: { type: "text", target: "button.cta", value: "Bestel nu", scope: "targeted" }
+- "Donkere achtergrond" → quickEdit: { type: "bgColor", target: "body", value: "#1a1a2e", scope: "global" }, plus quickEdit voor tekst: type: "color", target: "body", value: "#ffffff", scope: "global"
+
+Als het MEERDERE snelle wijzigingen zijn, gebruik dan een array in "quickEdits" (meervoud).
+Gebruik quickEdit ALLEEN als de wijziging simpel genoeg is om met CSS/tekst te doen. Voor structurele of complexe wijzigingen, zet shouldBuild op true zonder quickEdit.
+
 TOON EN STIJL:
 - Gebruik GEEN emoji's. Alleen platte tekst.
 - Houd antwoorden ULTRA kort (1-2 zinnen max).
@@ -37,8 +61,12 @@ JE ANTWOORD MOET ALTIJD GELDIG JSON ZIJN in dit formaat:
 {
   "title": "Korte samenvatting (3-6 woorden)",
   "message": "Je korte bevestiging",
-  "shouldBuild": true of false
+  "shouldBuild": true of false,
+  "quickEdits": [{ "type": "color", "target": "body", "value": "#000", "scope": "global" }]
 }
+
+quickEdits is OPTIONEEL. Gebruik het alleen voor simpele visuele/tekst wijzigingen aan een bestaande app.
+Als quickEdits aanwezig is, zet shouldBuild op false (de wijziging wordt direct toegepast zonder rebuild).
 
 NIETS ANDERS. Alleen dit JSON-object.`;
 
@@ -133,7 +161,22 @@ serve(async (req) => {
       shouldBuild = false;
     }
 
-    return new Response(JSON.stringify({ message, title, shouldBuild }), {
+    const result: any = { message, title, shouldBuild };
+    
+    // Parse quickEdits if present
+    try {
+      let cleaned = rawContent.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+      }
+      const parsed = JSON.parse(cleaned);
+      if (parsed.quickEdits && Array.isArray(parsed.quickEdits) && parsed.quickEdits.length > 0) {
+        result.quickEdits = parsed.quickEdits;
+        result.shouldBuild = false; // Quick edits don't need a rebuild
+      }
+    } catch {}
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
