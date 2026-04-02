@@ -1,6 +1,6 @@
 /**
  * Renderer — Converts JSON component definitions into React elements.
- * Used for previewing app structures before full HTML generation.
+ * Supports ALL component types from componentMap.ts with safe fallbacks.
  */
 
 import React from "react";
@@ -8,11 +8,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import type { AIComponent, AIScreen } from "./componentMap";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
+import type { AIComponent, AIScreen, AIComponentType } from "./componentMap";
+import { COMPONENT_TYPES } from "./constraints";
+
+/** Check if a component type is valid */
+function isValidType(type: string): type is AIComponentType {
+  return (COMPONENT_TYPES as readonly string[]).includes(type);
+}
 
 /** Render a single AI component to a React element */
 export function renderComponent(component: AIComponent, index: number): React.ReactElement {
   const key = `${component.type}-${index}`;
+
+  // Guard against invalid types
+  if (!isValidType(component.type)) {
+    return React.createElement(
+      "div",
+      { key, className: "p-2 border border-dashed border-destructive rounded text-xs text-destructive" },
+      `[Ongeldig type: ${component.type}] ${component.label}`,
+    );
+  }
 
   switch (component.type) {
     case "button":
@@ -27,6 +50,7 @@ export function renderComponent(component: AIComponent, index: number): React.Re
         key,
         placeholder: component.label,
         className: "w-full",
+        type: (component.props?.type as string) || "text",
       });
 
     case "checkbox":
@@ -65,7 +89,7 @@ export function renderComponent(component: AIComponent, index: number): React.Re
     case "image":
       return React.createElement("img", {
         key,
-        src: component.props?.src as string || "/placeholder.svg",
+        src: (component.props?.src as string) || "/placeholder.svg",
         alt: component.label,
         className: "w-full rounded-lg object-cover",
       });
@@ -90,6 +114,13 @@ export function renderComponent(component: AIComponent, index: number): React.Re
         "nav",
         { key, className: "flex items-center justify-between p-4 bg-card border-b border-border" },
         React.createElement("span", { className: "font-bold" }, component.label),
+        component.children
+          ? React.createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              component.children.map((child, i) => renderComponent(child, i)),
+            )
+          : null,
       );
 
     case "hero":
@@ -107,12 +138,83 @@ export function renderComponent(component: AIComponent, index: number): React.Re
         component.label,
       );
 
-    default:
+    case "modal":
+      return React.createElement(
+        "div",
+        { key, className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 pointer-events-none" },
+        React.createElement(
+          "div",
+          { className: "bg-card rounded-lg shadow-xl p-6 max-w-md w-full mx-4" },
+          React.createElement("h3", { className: "font-semibold text-lg mb-2" }, component.label),
+          component.children
+            ? component.children.map((child, i) => renderComponent(child, i))
+            : React.createElement("p", { className: "text-sm text-muted-foreground" }, "Modal inhoud"),
+          React.createElement(
+            Button,
+            { variant: "outline", className: "mt-4 w-full" },
+            "Sluiten",
+          ),
+        ),
+      );
+
+    case "list":
+      return React.createElement(
+        "ul",
+        { key, className: "space-y-2 w-full" },
+        component.children
+          ? component.children.map((child, i) =>
+              React.createElement(
+                "li",
+                { key: `li-${i}`, className: "flex items-center gap-2 p-2 rounded bg-secondary/50" },
+                renderComponent(child, i),
+              ),
+            )
+          : React.createElement(
+              "li",
+              { className: "p-2 rounded bg-secondary/50 text-sm" },
+              component.label,
+            ),
+      );
+
+    case "table":
+      return React.createElement(
+        "div",
+        { key, className: "w-full overflow-x-auto rounded-lg border border-border" },
+        React.createElement(
+          Table,
+          null,
+          React.createElement(
+            TableHeader,
+            null,
+            React.createElement(
+              TableRow,
+              null,
+              React.createElement(TableHead, null, component.label),
+              React.createElement(TableHead, null, "Waarde"),
+            ),
+          ),
+          React.createElement(
+            TableBody,
+            null,
+            React.createElement(
+              TableRow,
+              null,
+              React.createElement(TableCell, null, "Voorbeeld"),
+              React.createElement(TableCell, null, "Data"),
+            ),
+          ),
+        ),
+      );
+
+    default: {
+      // Exhaustive check — this should never happen with valid types
+      const _exhaustive: never = component.type;
       return React.createElement(
         "div",
         { key, className: "p-2 border border-dashed border-border rounded" },
-        `[${component.type}] ${component.label}`,
+        `[${String(_exhaustive)}] ${component.label}`,
       );
+    }
   }
 }
 

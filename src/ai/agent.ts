@@ -21,6 +21,7 @@ import { saveVersion } from "./versioning";
 import { log, logPhase } from "./logger";
 import { withRetry } from "./retry";
 import { handleError, safeguard } from "./errorHandler";
+import { validateJSON, extractJSON } from "./jsonValidator";
 import {
   createAgentState,
   updatePlan,
@@ -352,5 +353,6 @@ export async function runAgent(
 }
 
 function isValidHtml(html: string): boolean {
-  return !!html && (html.includes("<html") || html.includes("<!DOCTYPE"));
+  if (!html || html.trim().length < 50) return false;
+  return html.includes("<html") || html.includes("<!DOCTYPE") || html.includes("<body");
 }

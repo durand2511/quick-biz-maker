@@ -7,6 +7,7 @@ import type { ChatMessage } from "@/api/ai";
 import type { AppPlan } from "./componentMap";
 import type { AgentState } from "./state";
 import { buildDirect } from "./builder";
+import { CONSTRAINT_BLOCK } from "./constraints";
 
 export interface EditRequest {
   /** The user's edit request */
@@ -59,19 +60,20 @@ export function createEditPrompt(
   request: EditRequest,
   editType: "quick" | "structural" | "feature" | "redesign",
 ): string {
-  switch (editType) {
-    case "quick":
-      return `Pas ALLEEN deze simpele wijziging toe, verander NIETS anders: ${request.prompt}`;
+  const base = (() => {
+    switch (editType) {
+      case "quick":
+        return `Pas ALLEEN deze simpele wijziging toe, verander NIETS anders: ${request.prompt}`;
+      case "structural":
+        return `Pas de structuur aan zoals gevraagd. Behoud alle bestaande functionaliteit: ${request.prompt}`;
+      case "feature":
+        return `Voeg deze nieuwe feature toe aan de bestaande app. Behoud alle bestaande code en styling: ${request.prompt}`;
+      case "redesign":
+        return `Herontwerp de hele app met behoud van alle functionaliteit: ${request.prompt}`;
+    }
+  })();
 
-    case "structural":
-      return `Pas de structuur aan zoals gevraagd. Behoud alle bestaande functionaliteit: ${request.prompt}`;
-
-    case "feature":
-      return `Voeg deze nieuwe feature toe aan de bestaande app. Behoud alle bestaande code en styling: ${request.prompt}`;
-
-    case "redesign":
-      return `Herontwerp de hele app met behoud van alle functionaliteit: ${request.prompt}`;
-  }
+  return `${base}\n\n${CONSTRAINT_BLOCK}`;
 }
 
 /** Execute an edit on an existing app */

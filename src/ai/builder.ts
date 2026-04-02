@@ -7,6 +7,7 @@ import type { ChatMessage } from "@/api/ai";
 import { streamGenerateApp } from "@/lib/aiStream";
 import type { AppPlan } from "./componentMap";
 import { componentHints } from "./componentMap";
+import { BUILDER_SYSTEM_PROMPT, CONSTRAINT_BLOCK } from "./constraints";
 
 export interface BuildCallbacks {
   onDelta: (chunk: string) => void;
@@ -36,6 +37,8 @@ function planToBuildPrompt(plan: AppPlan, userPrompt: string): string {
     .join("\n");
 
   return `${userPrompt}
+
+${CONSTRAINT_BLOCK}
 
 === APP STRUCTUUR ===
 App naam: ${plan.app_name}
