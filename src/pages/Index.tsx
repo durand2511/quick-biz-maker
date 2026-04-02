@@ -12,6 +12,7 @@ import PublishPanel from "@/components/PublishPanel";
 import FileManager from "@/components/FileManager";
 import VersionHistory, { type Version } from "@/components/VersionHistory";
 import VisualEditor from "@/components/VisualEditor";
+import BuildSteps from "@/components/BuildSteps";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage, type QuickEdit } from "@/lib/aiStream";
 import { runAgent, type AgentPhase } from "@/ai/agent";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
