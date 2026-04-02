@@ -20,6 +20,17 @@ import { toast } from "sonner";
 
 type ViewState = "home" | "editor" | "projects";
 
+const PHASE_LABELS: Record<AgentPhase, string> = {
+  idle: "",
+  understanding: "Verzoek analyseren...",
+  planning: "Plan opstellen...",
+  building: "App genereren...",
+  reviewing: "Kwaliteit controleren...",
+  fixing: "Verbeteringen toepassen...",
+  done: "Klaar!",
+  error: "Er ging iets mis",
+};
+
 const LOADING_STAGES = [
   "Verzoek verwerken...",
   "Componenten updaten...",
