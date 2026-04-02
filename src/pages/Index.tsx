@@ -71,6 +71,7 @@ const Index = () => {
   const [planPrompt, setPlanPrompt] = useState("");
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [isInitializing, setIsInitializing] = useState(false);
+  const [architecture, setArchitecture] = useState<AppArchitecture | null>(null);
   const [initText, setInitText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
