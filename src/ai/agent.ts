@@ -17,6 +17,10 @@ import { analyzeApp, type CriticResult } from "./critic";
 import { editApp, classifyEdit } from "./editor";
 import { loadMemory, rememberApp, getMemoryContext } from "./memory";
 import { executeTool, type ToolAction } from "./tools";
+import { saveVersion } from "./versioning";
+import { log, logPhase } from "./logger";
+import { withRetry } from "./retry";
+import { handleError, safeguard } from "./errorHandler";
 import {
   createAgentState,
   updatePlan,
