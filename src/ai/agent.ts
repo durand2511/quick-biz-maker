@@ -17,6 +17,10 @@ import { analyzeApp, type CriticResult } from "./critic";
 import { editApp, classifyEdit } from "./editor";
 import { loadMemory, rememberApp, getMemoryContext } from "./memory";
 import { executeTool, type ToolAction } from "./tools";
+import { saveVersion } from "./versioning";
+import { log, logPhase } from "./logger";
+import { withRetry } from "./retry";
+import { handleError, safeguard } from "./errorHandler";
 import {
   createAgentState,
   updatePlan,
@@ -90,9 +94,10 @@ export async function runAgent(
 
   try {
     // ── Phase 1: Understand intent ──
+    logPhase("understanding", input);
     callbacks.onPhaseChange("understanding", "Verzoek analyseren...");
 
-    const chatResult = await callChatAI(messages, hasExistingApp);
+    const chatResult = await withRetry(() => callChatAI(messages, hasExistingApp), "chat-ai");
     callbacks.onChatResponse(chatResult.message, chatResult.title);
 
     // Handle quick edits
@@ -310,12 +315,21 @@ export async function runAgent(
       }
     }
 
-    // ── Done: Save to memory ──
+    // ── Done: Save to memory + version ──
     callbacks.onHtmlComplete(state.html!);
     state.timestamps.done = Date.now();
 
-    // Remember this build
+    // Save version
     const finalScore = scoreApp(state);
+    saveVersion({
+      html: state.html!,
+      label: state.plan?.app_name || "App",
+      score: finalScore.overall,
+      iteration: state.iteration,
+      userIdea: input,
+    });
+
+    // Remember this build
     rememberApp(memory, {
       userIdea: input,
       appName: state.plan?.app_name || "App",
@@ -326,7 +340,7 @@ export async function runAgent(
     });
 
     const summary = getStateSummary(state);
-    console.log("Agent complete:", summary);
+    log("info", `Agent complete: ${summary}`);
 
     callbacks.onPhaseChange("done", "Klaar!");
   } catch (err) {

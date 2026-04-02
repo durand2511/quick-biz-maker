@@ -43,6 +43,8 @@ export interface AgentState {
   timestamps: Record<string, number>;
   /** Tool actions executed */
   toolHistory: { action: string; success: boolean; message: string }[];
+  /** Version history for rollback */
+  versionHistory: { id: string; html: string; score: number; timestamp: number }[];
 }
 
 /** Create a fresh agent state */
@@ -63,6 +65,7 @@ export function createAgentState(userIdea: string, previousHtml?: string | null)
     previousHtml: previousHtml || null,
     timestamps: { start: Date.now() },
     toolHistory: [],
+    versionHistory: [],
   };
 }
 
