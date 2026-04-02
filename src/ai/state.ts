@@ -3,7 +3,7 @@
  * Used by all modules to share data and track progress.
  */
 
-import type { AppPlan, AIScreen, AIDatabase, AILogicFeature } from "./componentMap";
+import type { AppPlan, AIScreen, AIDatabase, AIComponent } from "./componentMap";
 import type { CriticIssue } from "./critic";
 
 export interface TestResult {
@@ -21,6 +21,10 @@ export interface AgentState {
   ui: AIScreen[];
   /** Database structure */
   database: AIDatabase;
+  /** All components across screens */
+  components: AIComponent[];
+  /** Current score (1-10) */
+  score: number;
   /** Test results */
   tests: TestResult[];
   /** Errors encountered */
@@ -37,6 +41,8 @@ export interface AgentState {
   previousHtml: string | null;
   /** Phase timestamps for performance tracking */
   timestamps: Record<string, number>;
+  /** Tool actions executed */
+  toolHistory: { action: string; success: boolean; message: string }[];
 }
 
 /** Create a fresh agent state */
@@ -46,6 +52,8 @@ export function createAgentState(userIdea: string, previousHtml?: string | null)
     plan: null,
     ui: [],
     database: { tables: [] },
+    components: [],
+    score: 0,
     tests: [],
     errors: [],
     criticHistory: [],
@@ -54,16 +62,19 @@ export function createAgentState(userIdea: string, previousHtml?: string | null)
     isEdit: !!previousHtml,
     previousHtml: previousHtml || null,
     timestamps: { start: Date.now() },
+    toolHistory: [],
   };
 }
 
 /** Update the plan in state */
 export function updatePlan(state: AgentState, plan: AppPlan): AgentState {
+  const allComponents = plan.screens.flatMap((s) => s.components);
   return {
     ...state,
     plan,
     ui: plan.screens,
     database: plan.database,
+    components: allComponents,
     timestamps: { ...state.timestamps, planned: Date.now() },
   };
 }
@@ -75,6 +86,11 @@ export function updateHtml(state: AgentState, html: string): AgentState {
     html,
     timestamps: { ...state.timestamps, [`built_${state.iteration}`]: Date.now() },
   };
+}
+
+/** Update the score */
+export function updateScore(state: AgentState, score: number): AgentState {
+  return { ...state, score };
 }
 
 /** Add test results to state */
@@ -111,6 +127,19 @@ export function addError(state: AgentState, error: string): AgentState {
   };
 }
 
+/** Add tool execution to history */
+export function addToolResult(
+  state: AgentState,
+  action: string,
+  success: boolean,
+  message: string,
+): AgentState {
+  return {
+    ...state,
+    toolHistory: [...state.toolHistory, { action, success, message }],
+  };
+}
+
 /** Check if the app has improved between iterations */
 export function hasImproved(state: AgentState): boolean {
   const history = state.criticHistory;
@@ -128,10 +157,13 @@ export function getStateSummary(state: AgentState): string {
   return [
     `App: ${state.plan?.app_name || "Onbekend"}`,
     `Iteratie: ${state.iteration}`,
-    `Score: ${lastCritic?.score ?? "n.v.t."}`,
+    `Score: ${state.score}/10`,
+    `Critic: ${lastCritic?.score ?? "n.v.t."}`,
     `Schermen: ${state.ui.length}`,
+    `Componenten: ${state.components.length}`,
     `Tabellen: ${state.database.tables.length}`,
-    `Tests: ${state.tests.filter((t) => t.passed).length}/${state.tests.length} geslaagd`,
+    `Tests: ${state.tests.filter((t) => t.passed).length}/${state.tests.length}`,
+    `Tools: ${state.toolHistory.length}`,
     `Fouten: ${state.errors.length}`,
     `Tijd: ${(elapsed / 1000).toFixed(1)}s`,
   ].join(" | ");
