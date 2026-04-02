@@ -11,6 +11,7 @@ import { createPlan } from "./planner";
 import { buildDirect } from "./builder";
 import { generateBackendSchema, schemaToPromptHint } from "./backendAgent";
 import { generateUI, validateComponents } from "./uiAgent";
+import { generateArchitecture, architectureToPrompt, type AppArchitecture } from "./architecture";
 import { runTests, getTestSummary } from "./tester";
 import { scoreApp, scorePassesThreshold, scoreToCriticIssues } from "./scorer";
 import { analyzeApp, type CriticResult } from "./critic";

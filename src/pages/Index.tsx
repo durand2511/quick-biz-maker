@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import type { AppArchitecture } from "@/ai/architecture";
 import { useNavigate } from "react-router-dom";
 import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User, History, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
