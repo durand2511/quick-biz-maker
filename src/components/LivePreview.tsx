@@ -2,18 +2,20 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink, Smartphone, Monitor, FileDown, Loader2, Code2, Eye } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import CodeExplorer from "@/components/CodeExplorer";
+import type { AppArchitecture } from "@/ai/architecture";
 
 interface Props {
   html: string | null;
   isStreaming?: boolean;
+  architecture?: AppArchitecture | null;
 }
 
-const LivePreview = ({ html, isStreaming }: Props) => {
+const LivePreview = ({ html, isStreaming, architecture }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const codeRef = useRef<HTMLPreElement>(null);
 
-  // Auto-scroll code view while streaming
   useEffect(() => {
     if (showCode && isStreaming && codeRef.current) {
       codeRef.current.scrollTop = codeRef.current.scrollHeight;
@@ -41,12 +43,6 @@ const LivePreview = ({ html, isStreaming }: Props) => {
     window.open(url, "_blank");
   };
 
-  const handleCopyCode = () => {
-    if (!html) return;
-    navigator.clipboard.writeText(html);
-    toast.success("Code gekopieerd!");
-  };
-
   if (!html) {
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/30">
@@ -67,7 +63,6 @@ const LivePreview = ({ html, isStreaming }: Props) => {
           <div className="w-3 h-3 rounded-full bg-accent-foreground/20" />
           <div className="w-3 h-3 rounded-full bg-accent-foreground/15" />
 
-          {/* Code / Preview toggle */}
           <div className="ml-3 flex items-center bg-secondary rounded-lg p-0.5">
             <button
               onClick={() => setShowCode(false)}
@@ -108,30 +103,19 @@ const LivePreview = ({ html, isStreaming }: Props) => {
               <div className="w-px h-4 bg-border mx-1" />
             </>
           )}
-          {showCode && (
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleCopyCode}>
-              <Code2 className="h-3 w-3 mr-1" />
-              Kopieer
-            </Button>
-          )}
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleOpen}>
             <ExternalLink className="h-3 w-3 mr-1" />
             Open
           </Button>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleDownloadHtml}>
             <FileDown className="h-3 w-3 mr-1" />
-            HTML
+            Download
           </Button>
         </div>
       </div>
 
       {showCode ? (
-        <pre
-          ref={codeRef}
-          className="flex-1 overflow-auto p-4 text-xs font-mono text-foreground bg-card/50 whitespace-pre-wrap break-words leading-relaxed"
-        >
-          {html}
-        </pre>
+        <CodeExplorer html={html} architecture={architecture || null} />
       ) : (
         <div className="flex-1 flex items-start justify-center p-4 overflow-auto">
           <iframe
