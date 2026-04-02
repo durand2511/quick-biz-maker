@@ -7,6 +7,7 @@ import type { ChatMessage } from "@/api/ai";
 import type { AppPlan } from "./componentMap";
 import type { AgentState } from "./state";
 import { buildDirect } from "./builder";
+import { CONSTRAINT_BLOCK } from "./constraints";
 
 export interface EditRequest {
   /** The user's edit request */
