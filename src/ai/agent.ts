@@ -142,6 +142,17 @@ export async function runAgent(
         const backendSchema = generateBackendSchema(state);
         state = { ...state, database: backendSchema.database };
 
+        // Architecture: generate structured blueprint
+        const architecture = generateArchitecture(
+          planResult.plan.app_name,
+          planResult.plan.description,
+          enrichedScreens,
+          planResult.plan.database,
+          planResult.plan.logic,
+        );
+        callbacks.onArchitectureReady(architecture);
+        const archPrompt = architectureToPrompt(architecture);
+
         // Memory context
         const memoryHint = getMemoryContext(memory, input);
         const backendHint = schemaToPromptHint(backendSchema);
