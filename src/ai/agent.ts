@@ -11,6 +11,7 @@ import { createPlan } from "./planner";
 import { buildDirect } from "./builder";
 import { generateBackendSchema, schemaToPromptHint } from "./backendAgent";
 import { generateUI, validateComponents } from "./uiAgent";
+import { generateArchitecture, architectureToPrompt, type AppArchitecture } from "./architecture";
 import { runTests, getTestSummary } from "./tester";
 import { scoreApp, scorePassesThreshold, scoreToCriticIssues } from "./scorer";
 import { analyzeApp, type CriticResult } from "./critic";
@@ -57,6 +58,7 @@ export interface AgentCallbacks {
   onChatResponse: (message: string, title: string) => void;
   onQuickEdits: (edits: QuickEdit[]) => void;
   onPlanReady: (plan: AppPlan) => void;
+  onArchitectureReady: (arch: AppArchitecture) => void;
   onCriticResult: (result: CriticResult) => void;
   onStateUpdate: (state: AgentState) => void;
   onError: (error: string) => void;
@@ -141,6 +143,17 @@ export async function runAgent(
         const backendSchema = generateBackendSchema(state);
         state = { ...state, database: backendSchema.database };
 
+        // Architecture: generate structured blueprint
+        const architecture = generateArchitecture(
+          planResult.plan.app_name,
+          planResult.plan.description,
+          enrichedScreens,
+          planResult.plan.database,
+          planResult.plan.logic,
+        );
+        callbacks.onArchitectureReady(architecture);
+        const archPrompt = architectureToPrompt(architecture);
+
         // Memory context
         const memoryHint = getMemoryContext(memory, input);
         const backendHint = schemaToPromptHint(backendSchema);
@@ -157,6 +170,7 @@ export async function runAgent(
             role: "user",
             content: [
               input,
+              archPrompt,
               backendHint ? `\n=== BACKEND ===\n${backendHint}` : "",
               memoryHint ? `\n=== CONTEXT ===\n${memoryHint}` : "",
             ].filter(Boolean).join("\n"),

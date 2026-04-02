@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import type { AppArchitecture } from "@/ai/architecture";
 import { useNavigate } from "react-router-dom";
 import { Globe, ChevronDown, Home, FolderOpen, Plus, LogOut, Files, User, History, MousePointer2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import FileManager from "@/components/FileManager";
 import VersionHistory, { type Version } from "@/components/VersionHistory";
 import VisualEditor from "@/components/VisualEditor";
 import BuildSteps from "@/components/BuildSteps";
+import ArchitecturePanel from "@/components/ArchitecturePanel";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage, type QuickEdit } from "@/lib/aiStream";
 import { runAgent, type AgentPhase } from "@/ai/agent";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
@@ -69,6 +71,7 @@ const Index = () => {
   const [planPrompt, setPlanPrompt] = useState("");
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [isInitializing, setIsInitializing] = useState(false);
+  const [architecture, setArchitecture] = useState<AppArchitecture | null>(null);
   const [initText, setInitText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadingStageRef = useRef(0);
@@ -96,6 +99,7 @@ const Index = () => {
     setPlan(null);
     setPlanPrompt("");
     setShowPublish(false);
+    setArchitecture(null);
     setVersions([]);
     setSessionId(crypto.randomUUID());
   };
@@ -396,6 +400,9 @@ const Index = () => {
           onPlanReady: () => {
             // Plans are handled internally by the agent now
           },
+          onArchitectureReady: (arch) => {
+            setArchitecture(arch);
+          },
           onCriticResult: (result) => {
             if (!result.passed && result.issues.length > 0) {
               console.log("Critic issues:", result.issues);
@@ -633,6 +640,9 @@ const Index = () => {
                 ) : (
                   <>
                     <ChatMessages messages={messages} isLoading={isLoading} loadingText={loadingText} />
+                    {architecture && (
+                      <ArchitecturePanel architecture={architecture} />
+                    )}
                     {isLoading && (
                       <BuildSteps currentPhase={agentPhase} />
                     )}
