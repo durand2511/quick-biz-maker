@@ -26,6 +26,7 @@ const PHASE_LABELS: Record<AgentPhase, string> = {
   planning: "Plan opstellen...",
   building: "App genereren...",
   testing: "App testen...",
+  scoring: "Score berekenen...",
   reviewing: "Kwaliteit controleren...",
   fixing: "Verbeteringen toepassen...",
   done: "Klaar!",
