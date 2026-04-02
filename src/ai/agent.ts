@@ -169,6 +169,7 @@ export async function runAgent(
             role: "user",
             content: [
               input,
+              archPrompt,
               backendHint ? `\n=== BACKEND ===\n${backendHint}` : "",
               memoryHint ? `\n=== CONTEXT ===\n${memoryHint}` : "",
             ].filter(Boolean).join("\n"),
