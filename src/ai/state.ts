@@ -65,6 +65,7 @@ export function createAgentState(userIdea: string, previousHtml?: string | null)
     previousHtml: previousHtml || null,
     timestamps: { start: Date.now() },
     toolHistory: [],
+    versionHistory: [],
   };
 }
 
