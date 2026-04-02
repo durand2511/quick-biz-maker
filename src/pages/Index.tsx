@@ -55,6 +55,7 @@ const Index = () => {
   const [loadingText, setLoadingText] = useState(LOADING_STAGES[0]);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [agentPhase, setAgentPhase] = useState<AgentPhase>("idle");
   const [currentProject, setCurrentProject] = useState<AppProject | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
