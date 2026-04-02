@@ -1,265 +1,26 @@
 /**
  * CodeExplorer — File tree + tabbed code view, similar to an IDE.
- * Shows architecture-derived files and the generated HTML code.
+ * Splits the generated HTML into multiple virtual files for a clean overview.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown, FileText, Folder, FolderOpen, X, Copy } from "lucide-react";
 import { toast } from "sonner";
 import type { AppArchitecture } from "@/ai/architecture";
-
-interface FileNode {
-  name: string;
-  path: string;
-  type: "file" | "folder";
-  children?: FileNode[];
-  content?: string;
-}
+import { splitHtmlToFiles, type VirtualFile } from "@/ai/fileSplitter";
 
 interface CodeExplorerProps {
   html: string | null;
   architecture: AppArchitecture | null;
 }
 
-/** Build a virtual file tree from architecture */
-function buildFileTree(arch: AppArchitecture | null, html: string | null): FileNode[] {
-  if (!arch) {
-    // No architecture — just show the single HTML file
-    return html
-      ? [{ name: "app.html", path: "app.html", type: "file", content: html }]
-      : [];
-  }
+// ── Syntax color helpers ──
 
-  const root: FileNode[] = [];
-
-  // Components folder
-  if (arch.structure.components.length > 0) {
-    root.push({
-      name: "components",
-      path: "components",
-      type: "folder",
-      children: arch.structure.components.map((c) => ({
-        name: `${c.name}.js`,
-        path: `components/${c.name}.js`,
-        type: "file" as const,
-        content: generateComponentStub(c),
-      })),
-    });
-  }
-
-  // Pages folder
-  if (arch.structure.pages.length > 0) {
-    root.push({
-      name: "pages",
-      path: "pages",
-      type: "folder",
-      children: arch.structure.pages.map((p) => ({
-        name: `${capitalize(slugify(p.name))}Page.js`,
-        path: `pages/${capitalize(slugify(p.name))}Page.js`,
-        type: "file" as const,
-        content: generatePageStub(p, arch),
-      })),
-    });
-  }
-
-  // Layouts folder
-  if (arch.structure.layouts.length > 0) {
-    root.push({
-      name: "layouts",
-      path: "layouts",
-      type: "folder",
-      children: arch.structure.layouts.map((l) => ({
-        name: `${l.name}.js`,
-        path: `layouts/${l.name}.js`,
-        type: "file" as const,
-        content: generateLayoutStub(l),
-      })),
-    });
-  }
-
-  // Models folder
-  if (arch.structure.data_models.length > 0) {
-    root.push({
-      name: "models",
-      path: "models",
-      type: "folder",
-      children: arch.structure.data_models.map((m) => ({
-        name: `${m.name}.js`,
-        path: `models/${m.name}.js`,
-        type: "file" as const,
-        content: generateModelStub(m),
-      })),
-    });
-  }
-
-  // API folder
-  if (arch.structure.api_layer.length > 0) {
-    root.push({
-      name: "api",
-      path: "api",
-      type: "folder",
-      children: arch.structure.api_layer.map((a) => ({
-        name: `${a.name}.js`,
-        path: `api/${a.name}.js`,
-        type: "file" as const,
-        content: generateApiStub(a),
-      })),
-    });
-  }
-
-  // Root files
-  if (html) {
-    root.push({ name: "app.html", path: "app.html", type: "file", content: html });
-  }
-  root.push({
-    name: "styles.css",
-    path: "styles.css",
-    type: "file",
-    content: generateStylesStub(arch),
-  });
-
-  return root;
-}
-
-// ── Stub generators ──
-
-function generateComponentStub(c: { name: string; type: string; purpose: string; props: { name: string; type: string }[] }): string {
-  const propsStr = c.props.map((p) => `  ${p.name}: ${p.type}`).join(",\n");
-  return `/**
- * ${c.name}
- * Type: ${c.type}
- * Purpose: ${c.purpose}
- */
-
-function create${c.name}(props) {
-  // Props:
-  // ${propsStr.replace(/\n/g, "\n  // ")}
-
-  const el = document.createElement("div");
-  el.className = "${c.type}-component";
-  el.textContent = props.label || "${c.purpose}";
-  return el;
-}
-`;
-}
-
-function generatePageStub(
-  p: { name: string; route: string; purpose: string; layout: string; components: string[] },
-  arch: AppArchitecture,
-): string {
-  const imports = p.components.map((c) => `// import { create${c} } from "../components/${c}";`).join("\n");
-  return `/**
- * ${p.name} Page
- * Route: ${p.route}
- * Layout: ${p.layout}
- * Purpose: ${p.purpose}
- */
-
-${imports}
-
-function render${capitalize(slugify(p.name))}Page() {
-  const container = document.createElement("section");
-  container.id = "page-${slugify(p.name)}";
-
-  // Components used:
-${p.components.map((c) => `  // - ${c}`).join("\n")}
-
-  return container;
-}
-`;
-}
-
-function generateLayoutStub(l: { name: string; description: string; slots: string[] }): string {
-  return `/**
- * ${l.name}
- * ${l.description}
- * Slots: ${l.slots.join(", ")}
- */
-
-function create${l.name}() {
-  const layout = document.createElement("div");
-  layout.className = "layout-${l.name.toLowerCase()}";
-
-${l.slots.map((s) => `  const ${s} = document.createElement("div");\n  ${s}.className = "slot-${s}";\n  layout.appendChild(${s});`).join("\n\n")}
-
-  return layout;
-}
-`;
-}
-
-function generateModelStub(m: { name: string; fields: { name: string; type: string }[] }): string {
-  const fieldsStr = m.fields.map((f) => `  ${f.name}: ${f.type}`).join(",\n");
-  return `/**
- * Data Model: ${m.name}
- *
- * Fields:
- * ${fieldsStr.replace(/\n/g, "\n * ")}
- */
-
-const ${m.name}Store = {
-  items: JSON.parse(localStorage.getItem("${m.name}") || "[]"),
-
-  getAll() {
-    return this.items;
-  },
-
-  add(item) {
-    this.items.push({ id: Date.now(), ...item });
-    this._save();
-  },
-
-  remove(id) {
-    this.items = this.items.filter(i => i.id !== id);
-    this._save();
-  },
-
-  _save() {
-    localStorage.setItem("${m.name}", JSON.stringify(this.items));
-  }
-};
-`;
-}
-
-function generateApiStub(a: { name: string; method: string; description: string }): string {
-  return `/**
- * API: ${a.name}
- * Method: ${a.method}
- * ${a.description}
- */
-
-async function ${a.name}(data) {
-  // ${a.method} request
-  // ${a.description}
-  console.log("API call: ${a.method} ${a.name}", data);
-  return { success: true };
-}
-`;
-}
-
-function generateStylesStub(arch: AppArchitecture): string {
-  const colors = arch.design_system.colors.map((c) => `  --color-${c.name}: ${c.value};`).join("\n");
-  return `/* ${arch.app_name} - Design System */
-
-:root {
-${colors}
-  --border-radius: ${arch.design_system.border_radius};
-  --font-family: ${arch.design_system.typography};
-}
-
-body {
-  font-family: var(--font-family);
-  margin: 0;
-  padding: 0;
-}
-`;
-}
-
-function slugify(str: string): string {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+function getLanguageForFile(name: string): string {
+  if (name.endsWith(".css")) return "css";
+  if (name.endsWith(".js")) return "javascript";
+  if (name.endsWith(".html")) return "html";
+  return "text";
 }
 
 // ── Tree node component ──
@@ -270,10 +31,10 @@ function FileTreeNode({
   selectedPath,
   onSelect,
 }: {
-  node: FileNode;
+  node: VirtualFile;
   depth: number;
   selectedPath: string | null;
-  onSelect: (node: FileNode) => void;
+  onSelect: (node: VirtualFile) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   const isFolder = node.type === "folder";
@@ -320,11 +81,15 @@ function FileTreeNode({
 // ── Main component ──
 
 const CodeExplorer = ({ html, architecture }: CodeExplorerProps) => {
-  const fileTree = buildFileTree(architecture, html);
-  const [openTabs, setOpenTabs] = useState<FileNode[]>([]);
+  const fileTree = useMemo(
+    () => (html ? splitHtmlToFiles(html, architecture) : []),
+    [html, architecture],
+  );
+
+  const [openTabs, setOpenTabs] = useState<VirtualFile[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  const handleSelectFile = (node: FileNode) => {
+  const handleSelectFile = (node: VirtualFile) => {
     if (!openTabs.find((t) => t.path === node.path)) {
       setOpenTabs((prev) => [...prev, node]);
     }
@@ -351,6 +116,14 @@ const CodeExplorer = ({ html, architecture }: CodeExplorerProps) => {
     }
   };
 
+  // Count total files
+  const countFiles = (nodes: VirtualFile[]): number => {
+    return nodes.reduce((acc, n) => {
+      if (n.type === "folder" && n.children) return acc + countFiles(n.children);
+      return acc + 1;
+    }, 0);
+  };
+
   if (fileTree.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
@@ -362,9 +135,10 @@ const CodeExplorer = ({ html, architecture }: CodeExplorerProps) => {
   return (
     <div className="flex-1 flex min-h-0">
       {/* File tree sidebar */}
-      <div className="w-48 border-r border-border bg-card shrink-0 overflow-y-auto">
-        <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Bestanden
+      <div className="w-52 border-r border-border bg-card shrink-0 overflow-y-auto">
+        <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+          <span>Bestanden</span>
+          <span className="text-primary">{countFiles(fileTree)}</span>
         </div>
         {fileTree.map((node) => (
           <FileTreeNode
@@ -416,12 +190,19 @@ const CodeExplorer = ({ html, architecture }: CodeExplorerProps) => {
 
         {/* Code content */}
         {activeFile ? (
-          <pre className="flex-1 overflow-auto p-4 text-[11px] font-mono text-foreground bg-card/30 whitespace-pre-wrap break-words leading-relaxed">
-            {activeFile.content}
-          </pre>
+          <div className="flex-1 overflow-auto bg-card/30">
+            <div className="flex items-center justify-between px-4 py-1.5 border-b border-border/50 bg-card/50">
+              <span className="text-[10px] text-muted-foreground font-mono">{activeFile.path}</span>
+              <span className="text-[10px] text-muted-foreground uppercase">{activeFile.language || getLanguageForFile(activeFile.name)}</span>
+            </div>
+            <pre className="p-4 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words leading-relaxed">
+              {activeFile.content}
+            </pre>
+          </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
-            Klik op een bestand om de code te bekijken
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
+            <FileText className="h-8 w-8 opacity-20" />
+            <p className="text-xs">Klik op een bestand om de code te bekijken</p>
           </div>
         )}
       </div>
