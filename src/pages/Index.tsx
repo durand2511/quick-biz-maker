@@ -399,6 +399,9 @@ const Index = () => {
           onPlanReady: () => {
             // Plans are handled internally by the agent now
           },
+          onArchitectureReady: (arch) => {
+            setArchitecture(arch);
+          },
           onCriticResult: (result) => {
             if (!result.passed && result.issues.length > 0) {
               console.log("Critic issues:", result.issues);
