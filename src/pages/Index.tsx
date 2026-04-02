@@ -637,6 +637,9 @@ const Index = () => {
                 ) : (
                   <>
                     <ChatMessages messages={messages} isLoading={isLoading} loadingText={loadingText} />
+                    {isLoading && (
+                      <BuildSteps currentPhase={agentPhase} />
+                    )}
                     <ChatInput
                       onSend={handleSend}
                       onRequestPlan={handleRequestPlan}
