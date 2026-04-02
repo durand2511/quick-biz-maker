@@ -315,12 +315,21 @@ export async function runAgent(
       }
     }
 
-    // ── Done: Save to memory ──
+    // ── Done: Save to memory + version ──
     callbacks.onHtmlComplete(state.html!);
     state.timestamps.done = Date.now();
 
-    // Remember this build
+    // Save version
     const finalScore = scoreApp(state);
+    saveVersion({
+      html: state.html!,
+      label: state.plan?.app_name || "App",
+      score: finalScore.overall,
+      iteration: state.iteration,
+      userIdea: input,
+    });
+
+    // Remember this build
     rememberApp(memory, {
       userIdea: input,
       appName: state.plan?.app_name || "App",
@@ -331,7 +340,7 @@ export async function runAgent(
     });
 
     const summary = getStateSummary(state);
-    console.log("Agent complete:", summary);
+    log("info", `Agent complete: ${summary}`);
 
     callbacks.onPhaseChange("done", "Klaar!");
   } catch (err) {
