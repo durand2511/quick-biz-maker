@@ -38,6 +38,8 @@ function planToBuildPrompt(plan: AppPlan, userPrompt: string): string {
 
   return `${userPrompt}
 
+${CONSTRAINT_BLOCK}
+
 === APP STRUCTUUR ===
 App naam: ${plan.app_name}
 Beschrijving: ${plan.description}
