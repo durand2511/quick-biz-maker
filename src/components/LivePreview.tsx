@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Smartphone, Monitor, FileDown, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ExternalLink, Smartphone, Monitor, FileDown, Loader2, Code2, Eye } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 interface Props {
@@ -10,6 +10,15 @@ interface Props {
 
 const LivePreview = ({ html, isStreaming }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const codeRef = useRef<HTMLPreElement>(null);
+
+  // Auto-scroll code view while streaming
+  useEffect(() => {
+    if (showCode && isStreaming && codeRef.current) {
+      codeRef.current.scrollTop = codeRef.current.scrollHeight;
+    }
+  }, [html, showCode, isStreaming]);
 
   const handleDownloadHtml = () => {
     if (!html) return;
@@ -32,6 +41,12 @@ const LivePreview = ({ html, isStreaming }: Props) => {
     window.open(url, "_blank");
   };
 
+  const handleCopyCode = () => {
+    if (!html) return;
+    navigator.clipboard.writeText(html);
+    toast.success("Code gekopieerd!");
+  };
+
   if (!html) {
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/30">
@@ -51,7 +66,29 @@ const LivePreview = ({ html, isStreaming }: Props) => {
           <div className="w-3 h-3 rounded-full bg-destructive/50" />
           <div className="w-3 h-3 rounded-full bg-accent-foreground/20" />
           <div className="w-3 h-3 rounded-full bg-accent-foreground/15" />
-          <span className="text-xs text-muted-foreground ml-3">Preview</span>
+
+          {/* Code / Preview toggle */}
+          <div className="ml-3 flex items-center bg-secondary rounded-lg p-0.5">
+            <button
+              onClick={() => setShowCode(false)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                !showCode ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Eye className="h-3 w-3" />
+              Preview
+            </button>
+            <button
+              onClick={() => setShowCode(true)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                showCode ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Code2 className="h-3 w-3" />
+              Code
+            </button>
+          </div>
+
           {isStreaming && (
             <div className="flex items-center gap-1.5 ml-2 text-xs text-primary animate-pulse">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -60,13 +97,23 @@ const LivePreview = ({ html, isStreaming }: Props) => {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setIsMobile(false)}>
-            <Monitor className={`h-3.5 w-3.5 ${!isMobile ? "text-foreground" : "text-muted-foreground"}`} />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setIsMobile(true)}>
-            <Smartphone className={`h-3.5 w-3.5 ${isMobile ? "text-foreground" : "text-muted-foreground"}`} />
-          </Button>
-          <div className="w-px h-4 bg-border mx-1" />
+          {!showCode && (
+            <>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setIsMobile(false)}>
+                <Monitor className={`h-3.5 w-3.5 ${!isMobile ? "text-foreground" : "text-muted-foreground"}`} />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setIsMobile(true)}>
+                <Smartphone className={`h-3.5 w-3.5 ${isMobile ? "text-foreground" : "text-muted-foreground"}`} />
+              </Button>
+              <div className="w-px h-4 bg-border mx-1" />
+            </>
+          )}
+          {showCode && (
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleCopyCode}>
+              <Code2 className="h-3 w-3 mr-1" />
+              Kopieer
+            </Button>
+          )}
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleOpen}>
             <ExternalLink className="h-3 w-3 mr-1" />
             Open
@@ -78,16 +125,25 @@ const LivePreview = ({ html, isStreaming }: Props) => {
         </div>
       </div>
 
-      <div className="flex-1 flex items-start justify-center p-4 overflow-auto">
-        <iframe
-          srcDoc={html}
-          className={`bg-card border border-border rounded-lg shadow-sm transition-all duration-300 h-full ${
-            isMobile ? "w-[375px]" : "w-full"
-          }`}
-          title="Live Preview"
-          sandbox="allow-scripts"
-        />
-      </div>
+      {showCode ? (
+        <pre
+          ref={codeRef}
+          className="flex-1 overflow-auto p-4 text-xs font-mono text-foreground bg-card/50 whitespace-pre-wrap break-words leading-relaxed"
+        >
+          {html}
+        </pre>
+      ) : (
+        <div className="flex-1 flex items-start justify-center p-4 overflow-auto">
+          <iframe
+            srcDoc={html}
+            className={`bg-card border border-border rounded-lg shadow-sm transition-all duration-300 h-full ${
+              isMobile ? "w-[375px]" : "w-full"
+            }`}
+            title="Live Preview"
+            sandbox="allow-scripts"
+          />
+        </div>
+      )}
     </div>
   );
 };
