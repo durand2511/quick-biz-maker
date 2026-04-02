@@ -639,6 +639,9 @@ const Index = () => {
                 ) : (
                   <>
                     <ChatMessages messages={messages} isLoading={isLoading} loadingText={loadingText} />
+                    {architecture && (
+                      <ArchitecturePanel architecture={architecture} />
+                    )}
                     {isLoading && (
                       <BuildSteps currentPhase={agentPhase} />
                     )}
