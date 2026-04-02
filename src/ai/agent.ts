@@ -94,9 +94,10 @@ export async function runAgent(
 
   try {
     // ── Phase 1: Understand intent ──
+    logPhase("understanding", input);
     callbacks.onPhaseChange("understanding", "Verzoek analyseren...");
 
-    const chatResult = await callChatAI(messages, hasExistingApp);
+    const chatResult = await withRetry(() => callChatAI(messages, hasExistingApp), "chat-ai");
     callbacks.onChatResponse(chatResult.message, chatResult.title);
 
     // Handle quick edits
