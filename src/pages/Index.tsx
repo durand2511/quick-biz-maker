@@ -399,6 +399,9 @@ const Index = () => {
               console.log("Critic issues:", result.issues);
             }
           },
+          onStateUpdate: (agentState) => {
+            console.log("Agent state:", agentState);
+          },
           onError: (error) => {
             toast.error(error);
           },
