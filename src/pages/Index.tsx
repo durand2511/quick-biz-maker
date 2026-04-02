@@ -13,6 +13,7 @@ import FileManager from "@/components/FileManager";
 import VersionHistory, { type Version } from "@/components/VersionHistory";
 import VisualEditor from "@/components/VisualEditor";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage, type QuickEdit } from "@/lib/aiStream";
+import { runAgent, type AgentPhase } from "@/ai/agent";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
