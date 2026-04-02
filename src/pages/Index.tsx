@@ -13,11 +13,23 @@ import FileManager from "@/components/FileManager";
 import VersionHistory, { type Version } from "@/components/VersionHistory";
 import VisualEditor from "@/components/VisualEditor";
 import { chatWithAI, planWithAI, streamGenerateApp, type ChatMessage, type QuickEdit } from "@/lib/aiStream";
+import { runAgent, type AgentPhase } from "@/ai/agent";
 import { createProject, updateProject, type AppProject } from "@/lib/projects";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 type ViewState = "home" | "editor" | "projects";
+
+const PHASE_LABELS: Record<AgentPhase, string> = {
+  idle: "",
+  understanding: "Verzoek analyseren...",
+  planning: "Plan opstellen...",
+  building: "App genereren...",
+  reviewing: "Kwaliteit controleren...",
+  fixing: "Verbeteringen toepassen...",
+  done: "Klaar!",
+  error: "Er ging iets mis",
+};
 
 const LOADING_STAGES = [
   "Verzoek verwerken...",
@@ -43,6 +55,7 @@ const Index = () => {
   const [loadingText, setLoadingText] = useState(LOADING_STAGES[0]);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [agentPhase, setAgentPhase] = useState<AgentPhase>("idle");
   const [currentProject, setCurrentProject] = useState<AppProject | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
@@ -318,48 +331,78 @@ const Index = () => {
       }
     }
 
-    // When coming from home, start with a clean message list (don't use stale state)
+    // When coming from home, start with a clean message list
     const baseMessages: ChatMessage[] = comingFromHome ? [] : messages;
     const userMsg: ChatMessage = { role: "user", content: input, ...(images && { images }) };
     const updatedMessages = [...baseMessages, userMsg];
     setMessages(updatedMessages);
     setIsLoading(true);
-    setLoadingText("Even nadenken...");
+    startLoadingCycle();
 
     try {
-      const hasApp = comingFromHome ? false : !!generatedHtml;
-      const chatResponse = await chatWithAI({
-        messages: updatedMessages,
-        hasExistingApp: hasApp,
-      });
-
-      // Handle quick edits (instant, no rebuild)
-      if (chatResponse.quickEdits && chatResponse.quickEdits.length > 0 && generatedHtml) {
-        const updatedHtml = applyQuickEdits(generatedHtml, chatResponse.quickEdits);
-        setGeneratedHtml(updatedHtml);
-        saveHtmlToProject(updatedHtml);
-        addVersion(updatedHtml, "Snelle wijziging");
-        const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
-        setMessages(newMsgs);
-        if (activeProject) updateProject(activeProject.id, { chatHistory: newMsgs });
-        setIsLoading(false);
-        toast.success("Wijziging direct toegepast!");
-        return;
-      }
-
-      if (!chatResponse.shouldBuild) {
-        const newMsgs = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
-        setMessages(newMsgs);
-        if (activeProject) updateProject(activeProject.id, { chatHistory: newMsgs });
-        setIsLoading(false);
-        return;
-      }
-
-      const msgsWithResponse = [...updatedMessages, { role: "assistant" as const, content: chatResponse.message, title: chatResponse.title }];
-      setMessages(msgsWithResponse);
-      if (activeProject) updateProject(activeProject.id, { chatHistory: msgsWithResponse });
-
-      await executeBuild(input, msgsWithResponse, undefined, images);
+      await runAgent(
+        input,
+        updatedMessages,
+        comingFromHome ? null : generatedHtml,
+        {
+          onPhaseChange: (phase, msg) => {
+            setAgentPhase(phase);
+            if (msg) setLoadingText(msg);
+            else setLoadingText(PHASE_LABELS[phase] || "");
+            if (phase === "building") setIsStreaming(true);
+            if (phase === "done" || phase === "error") {
+              setIsLoading(false);
+              setIsStreaming(false);
+              stopLoadingCycle();
+            }
+          },
+          onHtmlDelta: (chunk) => {
+            setGeneratedHtml((prev) => {
+              const next = (prev || "") + chunk;
+              // Show partial preview
+              if (next.includes("<body") && next.length > 500) {
+                let preview = next.trim();
+                if (!preview.includes("</body>")) preview += "\n</body></html>";
+                return replaceImagePlaceholders(preview, images);
+              }
+              return next;
+            });
+          },
+          onHtmlComplete: (html) => {
+            const finalHtml = replaceImagePlaceholders(html, images);
+            setGeneratedHtml(finalHtml);
+            saveHtmlToProject(finalHtml);
+            addVersion(finalHtml, generatedHtml ? "Wijziging" : "Eerste versie");
+          },
+          onChatResponse: (message, title) => {
+            setMessages((prev) => {
+              const newMsgs = [...prev, { role: "assistant" as const, content: message, title }];
+              if (activeProject) updateProject(activeProject.id, { chatHistory: newMsgs });
+              return newMsgs;
+            });
+          },
+          onQuickEdits: (edits) => {
+            if (generatedHtml) {
+              const updatedHtml = applyQuickEdits(generatedHtml, edits);
+              setGeneratedHtml(updatedHtml);
+              saveHtmlToProject(updatedHtml);
+              addVersion(updatedHtml, "Snelle wijziging");
+              toast.success("Wijziging direct toegepast!");
+            }
+          },
+          onPlanReady: () => {
+            // Plans are handled internally by the agent now
+          },
+          onCriticResult: (result) => {
+            if (!result.passed && result.issues.length > 0) {
+              console.log("Critic issues:", result.issues);
+            }
+          },
+          onError: (error) => {
+            toast.error(error);
+          },
+        },
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Er ging iets mis. Probeer het opnieuw.");
       setIsLoading(false);
