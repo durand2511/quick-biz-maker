@@ -47,6 +47,10 @@ TECHNICAL RULES:
 - The HTML must be a complete document with <!DOCTYPE html>, <html>, <head>, <body>.
 - Use Tailwind CSS via CDN (<script src="https://cdn.tailwindcss.com"></script>) for styling.
 - Make the app fully mobile-responsive with a mobile-first approach.
+- Structure your JavaScript as REUSABLE COMPONENT FUNCTIONS. Example:
+  function createCard(title, content) { ... return element; }
+  function createButton(label, onClick) { ... return element; }
+- Each screen section should be built by composing these component functions.
 - Include smooth CSS transitions and hover effects.
 - Add a sticky navigation bar with working mobile hamburger menu.
 - Use Font Awesome icons via CDN for visual appeal.
