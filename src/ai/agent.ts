@@ -1,16 +1,29 @@
 /**
- * Agent — The main orchestrator that coordinates planner, builder, and critic.
+ * Agent — The main orchestrator that coordinates all modules.
  *
- * Flow: User input → Chat AI (intent) → Planner → Builder → Critic → Output
+ * Flow: User input → Understand → Plan → Backend → Build → Test → Critic → Fix (×3) → Output
  *
- * The agent runs as an async pipeline, calling each module in sequence
- * and making decisions based on intermediate results.
+ * Uses AgentState to track progress across all phases.
  */
 
 import { callChatAI, type ChatMessage } from "@/api/ai";
 import { createPlan } from "./planner";
 import { buildFromPlan, buildDirect } from "./builder";
+import { generateBackend, backendToPromptHint } from "./backend";
+import { runTests, getTestSummary } from "./tester";
 import { analyzeApp, type CriticResult } from "./critic";
+import { editApp, classifyEdit } from "./editor";
+import {
+  createAgentState,
+  updatePlan,
+  updateHtml,
+  addTests,
+  addCriticResults,
+  addError,
+  hasImproved,
+  getStateSummary,
+  type AgentState,
+} from "./state";
 import type { AppPlan } from "./componentMap";
 import type { QuickEdit } from "@/lib/aiStream";
 
@@ -20,6 +33,7 @@ export type AgentPhase =
   | "planning"
   | "building"
   | "reviewing"
+  | "testing"
   | "fixing"
   | "done"
   | "error";
@@ -32,6 +46,7 @@ export interface AgentCallbacks {
   onQuickEdits: (edits: QuickEdit[]) => void;
   onPlanReady: (plan: AppPlan) => void;
   onCriticResult: (result: CriticResult) => void;
+  onStateUpdate: (state: AgentState) => void;
   onError: (error: string) => void;
 }
 
@@ -45,7 +60,7 @@ export interface AgentConfig {
 }
 
 const DEFAULT_CONFIG: AgentConfig = {
-  maxFixCycles: 1,
+  maxFixCycles: 3,
   skipCriticForUpdates: true,
   minScore: 60,
 };
@@ -62,6 +77,9 @@ export async function runAgent(
 ): Promise<void> {
   const cfg = { ...DEFAULT_CONFIG, ...config };
   const hasExistingApp = !!currentHtml;
+  let state = createAgentState(input, currentHtml);
+
+  const emitState = () => callbacks.onStateUpdate?.(state);
 
   try {
     // ── Phase 1: Understand intent ──
@@ -83,98 +101,191 @@ export async function runAgent(
       return;
     }
 
-    // ── Phase 2: Build ──
+    // ── Phase 2: Build (with backend hints if new app) ──
     callbacks.onPhaseChange("building", "App genereren...");
 
-    let generatedHtml = "";
+    // For new apps, generate backend structure for richer prompts
+    if (!hasExistingApp) {
+      // Quick plan inference for backend generation
+      try {
+        const planResult = await createPlan(input, false);
+        state = updatePlan(state, planResult.plan);
+        callbacks.onPlanReady(planResult.plan);
 
-    await buildDirect(
-      [
-        ...messages.filter((m) => m.role === "user"),
-        { role: "user", content: input },
-      ],
-      currentHtml,
-      {
-        onDelta: callbacks.onHtmlDelta,
-        onDone: (html) => {
-          generatedHtml = html;
-        },
-        onError: (err) => {
-          callbacks.onError(err);
-        },
-      },
-    );
+        const backend = generateBackend(state);
+        const backendHint = backendToPromptHint(backend);
 
-    if (!generatedHtml || (!generatedHtml.includes("<html") && !generatedHtml.includes("<!DOCTYPE"))) {
-      callbacks.onError("Generatie mislukt: geen geldige HTML ontvangen");
-      callbacks.onPhaseChange("error");
-      return;
+        // Build with enriched prompt
+        let generatedHtml = "";
+        const enrichedMessages: ChatMessage[] = [
+          ...messages.filter((m) => m.role === "user"),
+          {
+            role: "user",
+            content: backendHint
+              ? `${input}\n\n=== BACKEND STRUCTUUR ===\n${backendHint}`
+              : input,
+          },
+        ];
+
+        await buildDirect(enrichedMessages, null, {
+          onDelta: callbacks.onHtmlDelta,
+          onDone: (html) => { generatedHtml = html; },
+          onError: (err) => {
+            state = addError(state, err);
+            callbacks.onError(err);
+          },
+        });
+
+        if (!generatedHtml || (!generatedHtml.includes("<html") && !generatedHtml.includes("<!DOCTYPE"))) {
+          callbacks.onError("Generatie mislukt: geen geldige HTML ontvangen");
+          callbacks.onPhaseChange("error");
+          return;
+        }
+
+        state = updateHtml(state, generatedHtml);
+        emitState();
+      } catch {
+        // Fallback: build without plan
+        let generatedHtml = "";
+        await buildDirect(
+          [...messages.filter((m) => m.role === "user"), { role: "user", content: input }],
+          null,
+          {
+            onDelta: callbacks.onHtmlDelta,
+            onDone: (html) => { generatedHtml = html; },
+            onError: (err) => { state = addError(state, err); callbacks.onError(err); },
+          },
+        );
+
+        if (!generatedHtml || (!generatedHtml.includes("<html") && !generatedHtml.includes("<!DOCTYPE"))) {
+          callbacks.onError("Generatie mislukt");
+          callbacks.onPhaseChange("error");
+          return;
+        }
+
+        state = updateHtml(state, generatedHtml);
+        emitState();
+      }
+    } else {
+      // Edit mode: use editor module
+      let generatedHtml = "";
+      await editApp(
+        {
+          prompt: input,
+          currentHtml: currentHtml!,
+          conversationHistory: messages,
+        },
+        {
+          onDelta: callbacks.onHtmlDelta,
+          onDone: (html) => { generatedHtml = html; },
+          onError: (err) => { state = addError(state, err); callbacks.onError(err); },
+        },
+      );
+
+      if (!generatedHtml || (!generatedHtml.includes("<html") && !generatedHtml.includes("<!DOCTYPE"))) {
+        callbacks.onError("Wijziging mislukt");
+        callbacks.onPhaseChange("error");
+        return;
+      }
+
+      state = updateHtml(state, generatedHtml);
+      emitState();
+
+      // Skip critic for quick edits
+      if (cfg.skipCriticForUpdates && classifyEdit(input) === "quick") {
+        callbacks.onHtmlComplete(state.html!);
+        callbacks.onPhaseChange("done", "Wijziging toegepast!");
+        return;
+      }
     }
 
-    // ── Phase 3: Critic review ──
-    const isUpdate = hasExistingApp;
-    if (cfg.skipCriticForUpdates && isUpdate) {
-      callbacks.onHtmlComplete(generatedHtml);
-      callbacks.onPhaseChange("done", "Wijziging toegepast!");
-      return;
-    }
+    // ── Phase 3: Test ──
+    callbacks.onPhaseChange("testing", "App testen...");
+    const testResults = runTests(state);
+    state = addTests(state, testResults);
+    const testSummary = getTestSummary(testResults);
+    emitState();
 
-    callbacks.onPhaseChange("reviewing", "Kwaliteit controleren...");
-
-    let currentResult = generatedHtml;
+    // ── Phase 4: Critic + Fix loop (up to maxFixCycles) ──
     let fixCycle = 0;
 
     while (fixCycle < cfg.maxFixCycles) {
-      const criticResult = await analyzeApp(currentResult, input);
-      callbacks.onCriticResult(criticResult);
+      callbacks.onPhaseChange("reviewing", `Kwaliteit controleren (ronde ${fixCycle + 1}/${cfg.maxFixCycles})...`);
 
+      const criticResult = await analyzeApp(state.html!, input);
+      callbacks.onCriticResult(criticResult);
+      state = addCriticResults(state, criticResult.score, criticResult.issues);
+      emitState();
+
+      // Check if we pass or if no improvement is being made
       if (criticResult.passed || !criticResult.shouldFix) {
         break;
       }
 
-      // ── Phase 4: Auto-fix ──
+      // Stop if not improving
+      if (fixCycle > 0 && !hasImproved(state)) {
+        break;
+      }
+
+      // ── Auto-fix ──
       fixCycle++;
       callbacks.onPhaseChange("fixing", `Verbeteringen toepassen (ronde ${fixCycle})...`);
 
-      const fixPrompt = criticResult.issues
+      const fixPrompts: string[] = [];
+
+      // Add critic fixes
+      const criticalFixes = criticResult.issues
         .filter((i) => i.severity === "critical")
-        .map((i) => `Fix: ${i.fix}`)
-        .join("\n");
+        .map((i) => i.fix);
+      fixPrompts.push(...criticalFixes);
 
-      if (!fixPrompt) break;
+      // Add failed test fixes
+      const failedTests = testResults
+        .filter((t) => !t.passed)
+        .slice(0, 3)
+        .map((t) => `Fix: ${t.description}`);
+      fixPrompts.push(...failedTests);
 
+      if (fixPrompts.length === 0) break;
+
+      const fixPrompt = fixPrompts.join("\n");
       let fixedHtml = "";
+
       await buildDirect(
         [
           { role: "user", content: input },
-          {
-            role: "user",
-            content: `Fix deze problemen in de huidige app:\n${fixPrompt}`,
-          },
+          { role: "user", content: `Fix deze problemen in de huidige app:\n${fixPrompt}` },
         ],
-        currentResult,
+        state.html!,
         {
           onDelta: callbacks.onHtmlDelta,
-          onDone: (html) => {
-            fixedHtml = html;
-          },
-          onError: () => {
-            // If fix fails, use the original
-          },
+          onDone: (html) => { fixedHtml = html; },
+          onError: () => { /* use original on failure */ },
         },
       );
 
       if (fixedHtml && (fixedHtml.includes("<html") || fixedHtml.includes("<!DOCTYPE"))) {
-        currentResult = fixedHtml;
+        state = updateHtml(state, fixedHtml);
+        // Re-run tests after fix
+        const newTests = runTests(state);
+        state = addTests(state, newTests);
+        emitState();
       } else {
         break;
       }
     }
 
-    callbacks.onHtmlComplete(currentResult);
+    // ── Done ──
+    callbacks.onHtmlComplete(state.html!);
+    state.timestamps.done = Date.now();
+
+    const summary = getStateSummary(state);
+    console.log("Agent complete:", summary);
+
     callbacks.onPhaseChange("done", "Klaar!");
   } catch (err) {
     const message = err instanceof Error ? err.message : "Onbekende fout";
+    state = addError(state, message);
     callbacks.onError(message);
     callbacks.onPhaseChange("error", message);
   }
