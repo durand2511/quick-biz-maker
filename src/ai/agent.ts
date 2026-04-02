@@ -57,6 +57,7 @@ export interface AgentCallbacks {
   onChatResponse: (message: string, title: string) => void;
   onQuickEdits: (edits: QuickEdit[]) => void;
   onPlanReady: (plan: AppPlan) => void;
+  onArchitectureReady: (arch: AppArchitecture) => void;
   onCriticResult: (result: CriticResult) => void;
   onStateUpdate: (state: AgentState) => void;
   onError: (error: string) => void;
