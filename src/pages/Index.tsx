@@ -608,10 +608,6 @@ const Index = () => {
                   <History className="h-4 w-4 mr-1.5" />
                   Geschiedenis
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowFiles(true)}>
-                  <Files className="h-4 w-4 mr-1.5" />
-                  Bestanden
-                </Button>
                 <Button variant="default" size="sm" onClick={() => setShowPublish(true)} disabled={!generatedHtml}>
                   <Globe className="h-4 w-4 mr-1.5" />
                   Publiceer
